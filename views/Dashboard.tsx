@@ -77,9 +77,9 @@ const Dashboard = () => {
         {/* Quick Insights */}
         <Card title="Quick Insights" className="lg:col-span-1">
             <AIHelper 
-                title="Daily Focus"
-                promptTemplate="Generate 1 brief daily focus tip for a high Compliance (C) and high Dominance (D) executive profile."
-                mode="coach"
+                title="Governance Insights"
+                promptTemplate="Generate 3 concise, actionable insights for a C-level executive, focusing on governance and compliance best practices, based on their DISC profile {disc_profile}."
+                mode="audit"
                 discProfile="High C, High D"
                 contextData={{ role: "CCO", recent_activity: "Audit Preparation" }}
             />

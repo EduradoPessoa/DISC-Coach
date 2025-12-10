@@ -1,20 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 
-const getAiClient = () => {
-  const apiKey = process.env.API_KEY || ''; 
-  if (!apiKey) {
-    console.warn("API_KEY not found in environment variables.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
-
 export const generateDiscInsights = async (
   profile: string,
   context: string,
   mode: 'suggest' | 'coach' | 'audit',
   language: 'en' | 'pt' | 'es' = 'en'
 ): Promise<string> => {
-  const ai = getAiClient();
+  // Guidelines: API key must be obtained from process.env.API_KEY
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   let systemInstruction = "You are an expert executive coach specializing in DISC assessments for C-Level professionals.";
   
