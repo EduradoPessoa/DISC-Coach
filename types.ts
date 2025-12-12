@@ -6,6 +6,8 @@ export interface User {
   position: string;
   department: string;
   avatar?: string;
+  plan: 'free' | 'pro';
+  subscriptionStatus?: 'active' | 'past_due' | 'canceled' | null;
 }
 
 export interface Question {
@@ -46,4 +48,9 @@ export interface Notification {
   id: string;
   type: NotificationType;
   message: string;
+}
+
+export interface Coupon {
+  code: string;
+  discountPercentage: number; // 5 to 100
 }

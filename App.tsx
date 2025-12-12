@@ -19,6 +19,10 @@ import ResultsSummary from './views/results/ResultsSummary';
 import DevelopmentPlan from './views/DevelopmentPlan';
 import AdminUsers from './views/AdminUsers';
 import Settings from './views/Settings';
+import Pricing from './views/Pricing';
+import Checkout from './views/Checkout';
+import PaymentSuccess from './views/PaymentSuccess';
+import PaymentCancel from './views/PaymentCancel';
 
 // Layout Wrappers
 const AppLayout = () => {
@@ -76,10 +80,16 @@ const App = () => {
                   <Route path="login" element={<Login />} />
                   <Route path="onboarding" element={<Onboarding />} />
                 </Route>
+                
+                {/* Checkout Return Routes (No Layout for Clean UI) */}
+                <Route path="/checkout/success" element={<PaymentSuccess />} />
+                <Route path="/checkout/cancel" element={<PaymentCancel />} />
 
                 {/* Protected App Routes */}
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/checkout" element={<Checkout />} />
                   <Route path="/assessment/start" element={<StartAssessment />} />
                   <Route path="/assessment/question/:id" element={<Question />} />
                   <Route path="/assessment/review" element={<AssessmentReview />} />

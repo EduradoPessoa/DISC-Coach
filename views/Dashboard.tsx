@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { AIHelper } from '../components/ui/AIHelper';
+import { PremiumGate } from '../components/ui/PremiumGate';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Clock, CheckCircle } from 'lucide-react';
 
@@ -74,15 +75,18 @@ const Dashboard = () => {
             </div>
         </Card>
 
-        {/* Quick Insights */}
+        {/* Quick Insights - GATED CONTENT */}
         <Card title="Quick Insights" className="lg:col-span-1">
-            <AIHelper 
-                title="Governance Insights"
-                promptTemplate="Generate 3 concise, actionable insights for a C-level executive, focusing on governance and compliance best practices, based on their DISC profile {disc_profile}."
-                mode="audit"
-                discProfile="High C, High D"
-                contextData={{ role: "CCO", recent_activity: "Audit Preparation" }}
-            />
+            <PremiumGate title="AI Insights Locked" message="Upgrade to generate governance insights.">
+                <AIHelper 
+                    title="Governance Insights"
+                    promptTemplate="Generate 3 concise, actionable insights for a C-level executive, focusing on governance and compliance best practices, based on their DISC profile {disc_profile}."
+                    mode="audit"
+                    discProfile="High C, High D"
+                    contextData={{ role: "CCO", recent_activity: "Audit Preparation" }}
+                />
+            </PremiumGate>
+            
             <div className="mt-4 space-y-3">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-start space-x-3">
                     <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />

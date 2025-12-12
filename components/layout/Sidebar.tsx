@@ -1,6 +1,7 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, Settings, BookOpen } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, FileText, Users, Settings, BookOpen, Crown } from 'lucide-react';
+import { useUser } from '../../context/UserContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -8,6 +9,10 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeMobile }) => {
+  const { user } = useUser();
+  const navigate = useNavigate();
+  const isPro = user.plan === 'pro';
+
   const links = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
     { icon: FileText, label: 'My Assessment', to: '/assessment/start' },
@@ -40,15 +45,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeMobile }) => {
           </NavLink>
         ))}
       </div>
+      
       <div className="p-4 border-t border-slate-800">
-        <div className="bg-slate-800 rounded-lg p-4">
-            <h4 className="text-white text-sm font-medium mb-1">Level C Pro</h4>
-            <p className="text-xs text-slate-400 mb-3">Enterprise Plan Active</p>
-            <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-indigo-500 h-full w-3/4"></div>
+        {isPro ? (
+            <div className="bg-slate-800 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-1">
+                    <Crown className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-white text-sm font-medium">Level C Pro</h4>
+                </div>
+                <p className="text-xs text-slate-400 mb-3">Enterprise Plan Active</p>
+                <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-indigo-500 h-full w-3/4"></div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">75% Usage Limits</p>
             </div>
-            <p className="text-[10px] text-slate-400 mt-2">75% Usage Limits</p>
-        </div>
+        ) : (
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-800 rounded-lg p-4 border border-slate-700">
+                <h4 className="text-white text-sm font-medium mb-1">Free Plan</h4>
+                <p className="text-xs text-slate-400 mb-3">Unlock AI Insights</p>
+                <button 
+                    onClick={() => navigate('/pricing')}
+                    className="w-full py-2 text-xs font-semibold bg-white text-slate-900 rounded hover:bg-slate-100 transition-colors"
+                >
+                    Upgrade Now
+                </button>
+            </div>
+        )}
       </div>
     </aside>
   );
