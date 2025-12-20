@@ -4,26 +4,14 @@ const API_URL_ENV = import.meta.env.VITE_API_URL;
 const getApiUrl = () => {
   if (API_URL_ENV) return API_URL_ENV;
 
-  const { pathname, origin } = window.location;
-  
-  // Se estiver rodando localmente (Vite default port), usa o proxy
-  if (window.location.port === '5173') {
+  // Se estiver rodando localmente (Vite default port ou localhost), usa o proxy
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return '/api';
   }
 
-  // Tenta detectar se estamos em uma subpasta (ex: /disc/)
-  // Lista de rotas conhecidas de primeiro nível para ignorar na detecção da base
-  const appRoutes = ['auth', 'dashboard', 'assessment', 'results', 'admin', 'settings', 'pricing', 'checkout', 'legal', 'saas-admin'];
-  
-  const pathParts = pathname.split('/').filter(p => p);
-  let basePath = '';
-
-  // Se o primeiro segmento do caminho NÃO for uma rota do app, assumimos que é o nome da subpasta (ex: 'disc')
-  if (pathParts.length > 0 && !appRoutes.includes(pathParts[0])) {
-      basePath = '/' + pathParts[0];
-  }
-
-  return `${origin}${basePath}/api`;
+  // Produção: Assume que o site está na raiz (public_html) conforme solicitado
+  // Retorna caminho absoluto para a API
+  return '/api';
 };
 
 export const apiRequest = async (endpoint: string, method: string = 'GET', body?: any, isRetry = false): Promise<any> => {
