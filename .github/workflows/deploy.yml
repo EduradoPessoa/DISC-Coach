@@ -28,11 +28,15 @@ jobs:
       - name: 📂 Prepare Deployment Package
         run: |
           mkdir deploy_package
-          cp -r dist/* deploy_package/
+          # Copy all frontend files (including hidden ones like .htaccess if present)
+          cp -a dist/. deploy_package/
+          
+          # Create api directory and copy all backend files
           mkdir deploy_package/api
-          cp -r api/* deploy_package/api/
-          # Ensure .htaccess is copied if it exists in public/ or root but not in dist
-          # (Vite usually copies public/* to dist/)
+          cp -a api/. deploy_package/api/
+          
+          # Remove local config if necessary, or ensure permissions
+          # (Optional: remove .gitkeep files if any)
 
       - name: 📂 Sync files to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
