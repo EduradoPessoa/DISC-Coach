@@ -1,33 +1,53 @@
 <?php
+// Enable error reporting for debugging (temporary)
+ini_set('display_errors', 0); // Don't echo errors to avoid breaking JSON
+ini_set('log_errors', 1);
+error_reporting(E_ALL);
+
 include_once '../config/cors.php';
 include_once '../config/database.php';
 include_once '../utils/JWT.php';
 
-$database = new Database();
-$db = $database->getConnection();
-$data = json_decode(file_get_contents("php://input"));
+try {
+    $database = new Database();
+    $db = $database->getConnection();
+    
+    if (!$db) {
+        throw new Exception("Database connection failed.");
+    }
 
-if(!empty($data->email) && !empty($data->password)) {
+    $input = file_get_contents("php://input");
+    $data = json_decode($input);
+
+    if (empty($data->email) || empty($data->password)) {
+        http_response_code(400);
+        echo json_encode(array("message" => "Incomplete data. Provide email and password."));
+        exit;
+    }
+
     // Buscar usuário
     $query = "SELECT id, name, email, password_hash, role, plan, tenant_id, position, department FROM users WHERE email = :email LIMIT 0,1";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':email', $data->email);
-    $stmt->execute();
+    
+    if (!$stmt->execute()) {
+        $error = $stmt->errorInfo();
+        throw new Exception("Query execution failed: " . implode(" ", $error));
+    }
 
-    if($stmt->rowCount() > 0) {
+    if ($stmt->rowCount() > 0) {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // Verificar senha (simulado se hash for antigo/exemplo, ou real)
         $passwordValid = false;
         if (password_verify($data->password, $row['password_hash'])) {
             $passwordValid = true;
         } elseif ($data->password === "password123") { 
-            // Backdoor para dev local/usuários antigos de teste
+            // Backdoor check
             $passwordValid = true; 
         }
 
-        if($passwordValid) {
-            // 1. Gerar Access Token (JWT) - 15 min
+        if ($passwordValid) {
+            // 1. Gerar Access Token
             $issuedAt = time();
             $expirationTime = $issuedAt + 900; // 15 min
             
@@ -41,34 +61,47 @@ if(!empty($data->email) && !empty($data->password)) {
                 "exp" => $expirationTime
             );
 
-            $accessToken = JWT::encode($payload, JWT_SECRET);
+            try {
+                $accessToken = JWT::encode($payload, JWT_SECRET);
+            } catch (Exception $e) {
+                throw new Exception("JWT Generation failed: " . $e->getMessage());
+            }
 
-            // 2. Gerar Refresh Token (Opaque String) - 30 dias
-            $refreshToken = bin2hex(random_bytes(32)); // 64 chars hex
-            $refreshTokenHash = hash('sha256', $refreshToken);
-            $refreshExpiresAt = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60));
+            // 2. Refresh Token
+            try {
+                $refreshToken = bin2hex(random_bytes(32));
+                $refreshTokenHash = hash('sha256', $refreshToken);
+                $refreshExpiresAt = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60));
 
-            // 3. Salvar Refresh Token no DB
-            $insertQuery = "INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (:user_id, :token_hash, :expires_at)";
-            $insertStmt = $db->prepare($insertQuery);
-            $insertStmt->bindParam(':user_id', $row['id']);
-            $insertStmt->bindParam(':token_hash', $refreshTokenHash);
-            $insertStmt->bindParam(':expires_at', $refreshExpiresAt);
-            $insertStmt->execute();
+                $insertQuery = "INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (:user_id, :token_hash, :expires_at)";
+                $insertStmt = $db->prepare($insertQuery);
+                $insertStmt->bindParam(':user_id', $row['id']);
+                $insertStmt->bindParam(':token_hash', $refreshTokenHash);
+                $insertStmt->bindParam(':expires_at', $refreshExpiresAt);
+                
+                if (!$insertStmt->execute()) {
+                    // Log error but allow login to proceed (maybe?) or fail?
+                    // Let's fail to be safe
+                    $error = $insertStmt->errorInfo();
+                    throw new Exception("Refresh token insert failed: " . implode(" ", $error));
+                }
+            } catch (Exception $e) {
+                throw new Exception("Refresh token logic failed: " . $e->getMessage());
+            }
 
-            // 4. Registrar Login
+            // 3. Update Login
             $updateLogin = "UPDATE users SET last_login_at = NOW(), last_login_ip = :ip WHERE id = :id";
             $updateStmt = $db->prepare($updateLogin);
-            $ip = $_SERVER['REMOTE_ADDR'];
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
             $updateStmt->bindParam(':ip', $ip);
             $updateStmt->bindParam(':id', $row['id']);
             $updateStmt->execute();
 
-            // Set HttpOnly Cookie for Refresh Token
+            // Cookie
             setcookie("refreshToken", $refreshToken, [
                 'expires' => time() + (30 * 24 * 60 * 60),
                 'path' => '/',
-                'secure' => false, // Set to true in production (HTTPS)
+                'secure' => true, // Force Secure in Prod
                 'httponly' => true,
                 'samesite' => 'Lax'
             ]);
@@ -76,9 +109,6 @@ if(!empty($data->email) && !empty($data->password)) {
             http_response_code(200);
             echo json_encode(array(
                 "accessToken" => $accessToken,
-                // "refreshToken" => $refreshToken, // Don't send in body if using cookies, but for mobile support maybe we need it? 
-                // Spec says Mobile: Secure Storage, Web: HttpOnly. 
-                // Let's send it in body too so mobile can use it, web ignores it.
                 "refreshToken" => $refreshToken, 
                 "expiresIn" => 900,
                 "user" => array(
@@ -99,8 +129,13 @@ if(!empty($data->email) && !empty($data->password)) {
         http_response_code(401);
         echo json_encode(array("message" => "Login failed. Email not found."));
     }
-} else {
-    http_response_code(400);
-    echo json_encode(array("message" => "Incomplete data."));
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(array(
+        "message" => "Internal Server Error",
+        "error" => $e->getMessage(),
+        "trace" => $e->getTraceAsString()
+    ));
 }
 ?>
