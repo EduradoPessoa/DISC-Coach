@@ -1,8 +1,18 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^index\.html$ - [L]
+  Options -MultiViews
+
+  # 1. PROTEÇÃO DA API:
+  # Se a URL começar com /api/, PARE AQUI e deixe o servidor processar normalmente.
+  # Se o arquivo não existir, o servidor dará 404 padrão (não o do React).
+  RewriteRule ^api/ - [L,NC]
+
+  # 2. REACT ROUTER:
+  # Para qualquer outra coisa que NÃO seja arquivo ou diretório real,
+  # redirecione para o index.html do React.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/api/ [NC]
   RewriteRule . /index.html [L]
 </IfModule>
