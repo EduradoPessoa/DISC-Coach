@@ -1,8 +1,9 @@
-const API_URL_ENV = import.meta.env.VITE_API_URL;
+// const API_URL_ENV = import.meta.env.VITE_API_URL;
 
 // Função para determinar a URL da API dinamicamente
 const getApiUrl = () => {
-  if (API_URL_ENV) return API_URL_ENV;
+  // Ignoramos VITE_API_URL para evitar configurações incorretas de ambiente (como .env.local apontando para /disc/api)
+  // if (API_URL_ENV) return API_URL_ENV;
 
   // Se estiver rodando localmente (Vite default port ou localhost), usa o proxy
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -11,6 +12,7 @@ const getApiUrl = () => {
 
   // Produção: Assume que o site está na raiz (public_html) conforme solicitado
   // Retorna caminho absoluto para a API
+  console.log("API Service v1.2 - Force Root /api");
   return '/api';
 };
 
