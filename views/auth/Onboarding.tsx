@@ -5,28 +5,46 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useLanguage } from '../../context/LanguageContext';
 import { useUser } from '../../context/UserContext';
+import { apiRequest } from '../../services/api';
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { updateUser } = useUser();
+  const { updateUser, user } = useUser();
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
+    name: user?.name || '',
     position: '',
     department: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    updateUser({
-        name: formData.name,
-        position: formData.position,
-        department: formData.department
-    });
+    try {
+        // Save to DB
+        await apiRequest('/auth/update_profile.php', 'POST', {
+            name: formData.name,
+            position: formData.position,
+            department: formData.department
+        });
 
-    navigate('/dashboard');
+        // Update local context
+        updateUser({
+            name: formData.name,
+            position: formData.position,
+            department: formData.department
+        });
+
+        navigate('/dashboard');
+    } catch (error) {
+        console.error("Failed to update profile", error);
+        alert("Erro ao salvar perfil. Tente novamente.");
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -70,7 +88,7 @@ const Onboarding = () => {
             <label htmlFor="share" className="text-sm text-slate-700">{t('onboarding.shareResults')}</label>
         </div>
 
-        <Button label={t('onboarding.completeSetup')} fullWidth type="submit" />
+        <Button label={loading ? 'Salvando...' : t('onboarding.completeSetup')} fullWidth type="submit" disabled={loading} />
       </form>
     </Card>
   );

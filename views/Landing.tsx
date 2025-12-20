@@ -96,7 +96,7 @@ const Landing = () => {
                 <Button 
                     label="Começar Agora" 
                     className="text-sm font-bold bg-sky-500 hover:bg-sky-600 text-white border-none rounded-full px-6" 
-                    onClick={() => navigate('/auth/onboarding')} 
+                    onClick={() => navigate('/auth/register')} 
                 />
             </div>
         </header>
