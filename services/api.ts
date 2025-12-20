@@ -6,12 +6,24 @@ const getApiUrl = () => {
 
   const { pathname, origin } = window.location;
   
-  if (pathname.includes('/dist')) {
-    const basePath = pathname.substring(0, pathname.indexOf('/dist'));
-    return `${origin}${basePath}/api`;
+  // Se estiver rodando localmente (Vite default port), usa o proxy
+  if (window.location.port === '5173') {
+      return '/api';
   }
 
-  return '/api';
+  // Tenta detectar se estamos em uma subpasta (ex: /disc/)
+  // Lista de rotas conhecidas de primeiro nível para ignorar na detecção da base
+  const appRoutes = ['auth', 'dashboard', 'assessment', 'results', 'admin', 'settings', 'pricing', 'checkout', 'legal', 'saas-admin'];
+  
+  const pathParts = pathname.split('/').filter(p => p);
+  let basePath = '';
+
+  // Se o primeiro segmento do caminho NÃO for uma rota do app, assumimos que é o nome da subpasta (ex: 'disc')
+  if (pathParts.length > 0 && !appRoutes.includes(pathParts[0])) {
+      basePath = '/' + pathParts[0];
+  }
+
+  return `${origin}${basePath}/api`;
 };
 
 export const apiRequest = async (endpoint: string, method: string = 'GET', body?: any, isRetry = false): Promise<any> => {
