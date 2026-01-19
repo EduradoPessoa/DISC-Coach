@@ -14,6 +14,7 @@ interface UserContextType {
   isLoading: boolean;
   logout: () => Promise<void>;
   login: (email: string, pass: string) => Promise<void>;
+  register: (email: string, pass: string, profile: Partial<User>) => Promise<void>;
 }
 
 const defaultUser: User = {
@@ -36,26 +37,29 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Listener de estado de autenticação do Firebase
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setIsLoading(true);
       if (firebaseUser) {
-        const userData = await api.getUser(firebaseUser.uid);
-        if (userData) {
-          setUser(userData);
-        } else {
-          // Fallback caso o documento no Firestore ainda não exista
-          const newUser: User = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            email: firebaseUser.email || '',
-            role: firebaseUser.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
-            position: 'Executivo',
-            department: 'Corporativo',
-            plan: 'free'
-          };
-          await api.saveUser(newUser);
-          setUser(newUser);
+        try {
+          const userData = await api.getUser(firebaseUser.uid);
+          if (userData) {
+            setUser(userData);
+          } else {
+            // Caso o documento ainda não exista (ex: login social ou falha na criação anterior)
+            const newUser: User = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+              email: firebaseUser.email || '',
+              role: firebaseUser.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+              position: 'Executivo',
+              department: 'Corporativo',
+              plan: 'free'
+            };
+            await api.saveUser(newUser);
+            setUser(newUser);
+          }
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Erro ao carregar dados do usuário:", error);
         }
-        setIsAuthenticated(true);
       } else {
         setUser(defaultUser);
         setIsAuthenticated(false);
@@ -68,6 +72,24 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, pass: string) => {
     await signInWithEmailAndPassword(auth, email, pass);
+  };
+
+  const register = async (email: string, pass: string, profile: Partial<User>) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    
+    const newUser: User = {
+      id: cred.user.uid,
+      name: profile.name || email.split('@')[0],
+      email: email,
+      role: email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+      position: profile.position || 'Executivo',
+      department: profile.department || 'Corporativo',
+      plan: 'free'
+    };
+
+    await api.saveUser(newUser);
+    setUser(newUser);
+    setIsAuthenticated(true);
   };
 
   const handleSetUser = (newUser: User) => {
@@ -98,7 +120,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAuthenticated, 
       isLoading,
       logout,
-      login
+      login,
+      register
     }}>
       {!isLoading && children}
       {isLoading && (
