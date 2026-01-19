@@ -27,10 +27,31 @@ export interface DiscScore {
   C: number;
 }
 
+export interface FocusArea {
+  id: string;
+  title: string;
+  description: string;
+  category: 'D' | 'I' | 'S' | 'C' | 'Leadership';
+  status: 'planned' | 'in_progress' | 'completed';
+  dueDate?: string;
+}
+
+export interface AssessmentResult {
+  id: string;
+  timestamp: number;
+  scores: DiscScore;
+  analysis?: {
+    summary: string;
+    communication: string[];
+    value: string[];
+    blindspots: string[];
+  };
+}
+
 export interface ChartDataPoint {
   subject: string;
-  A: number;
-  fullMark: number;
+  score: number;
+  color: string;
 }
 
 export enum LayoutType {
