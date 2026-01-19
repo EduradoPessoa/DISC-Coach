@@ -1,8 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '../types';
+import { User } from '../types';
 import { auth } from '../services/firebaseConfig';
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut 
+} from 'firebase/auth';
 import { api } from '../services/api';
 
 interface UserContextType {
@@ -35,7 +40,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Listener de estado de autenticação do Firebase
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -43,7 +47,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (userData) {
             setUser(userData);
           } else {
-            // Caso o documento ainda não exista (ex: login social ou falha na criação anterior)
             const newUser: User = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
@@ -128,7 +131,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
            <div className="text-center">
               <div className="stripe-loader mx-auto mb-4"></div>
-              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Sincronizando com Google Cloud...</p>
+              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Sincronizando com Cloud...</p>
            </div>
         </div>
       )}

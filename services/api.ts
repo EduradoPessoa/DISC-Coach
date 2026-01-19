@@ -2,14 +2,14 @@
 import { db } from './firebaseConfig';
 import { 
   doc, 
-  getDoc, 
   setDoc, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc, 
   collection, 
-  getDocs, 
   query, 
   orderBy, 
-  updateDoc,
-  deleteDoc
+  getDocs 
 } from 'firebase/firestore';
 import { AssessmentResult, FocusArea, User } from '../types';
 
@@ -28,7 +28,6 @@ export const api = {
 
   // --- ASSESSMENTS ---
   async saveAssessment(result: AssessmentResult): Promise<void> {
-    // Salvamos no sub-coleção para segurança RLS facilitada
     const resRef = doc(db, "users", result.userId, "assessments", result.id);
     await setDoc(resRef, result);
   },
@@ -47,8 +46,6 @@ export const api = {
 
   // --- FOCUS AREAS (PDI) ---
   async saveFocusAreas(userId: string, areas: FocusArea[]): Promise<void> {
-    // Por simplicidade em PDI, podemos salvar um array ou gerenciar como coleção.
-    // Coleção é melhor para escala:
     for (const area of areas) {
       const areaRef = doc(db, "users", userId, "focusAreas", area.id);
       await setDoc(areaRef, area, { merge: true });

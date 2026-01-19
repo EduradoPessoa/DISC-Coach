@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+// Use gemini-3-pro-preview for complex reasoning tasks like executive coaching
 export const generateDiscInsights = async (
   profile: string,
   context: string,
@@ -36,6 +37,7 @@ export const generateDiscInsights = async (
       }
     });
     
+    // Access response.text property directly
     return response.text || "";
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -78,6 +80,7 @@ export const generateDevelopmentSuggestions = async (
       }
     });
 
+    // Access response.text property directly and parse JSON
     return JSON.parse(response.text || "{}").suggestions || [];
   } catch (error) {
     console.error("Suggestions Error:", error);
@@ -125,6 +128,7 @@ export const generateFullDiscReport = async (
       }
     });
 
+    // Access response.text property directly and parse JSON
     return JSON.parse(response.text || "{}");
   } catch (error) {
     console.error("Full Report Error:", error);

@@ -54,10 +54,14 @@
         background: #cbd5e1;
         border-radius: 4px;
       }
-      .prose h1, .prose h2, .prose h3 { font-weight: 700; color: #0f172a; margin-top: 1rem; margin-bottom: 0.5rem; }
-      .prose p { margin-bottom: 0.75rem; color: #475569; }
-      .prose ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 1rem; }
-      .prose li { margin-bottom: 0.25rem; color: #475569; }
+      
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translate3d(0, 20px, 0); }
+        to { opacity: 1; transform: translate3d(0, 0, 0); }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out forwards;
+      }
     </style>
   <script type="importmap">
 {
@@ -74,18 +78,13 @@
     "marked": "https://esm.sh/marked@11.1.1",
     "firebase/app": "https://esm.sh/firebase@11.1.0/app",
     "firebase/auth": "https://esm.sh/firebase@11.1.0/auth",
-    "firebase/firestore": "https://esm.sh/firebase@11.1.0/firestore",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "firebase/firestore": "https://esm.sh/firebase@11.1.0/firestore"
   }
 }
 </script>
 </head>
   <body class="bg-slate-50">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

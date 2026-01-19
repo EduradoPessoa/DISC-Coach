@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
@@ -134,7 +135,8 @@ const Dashboard = () => {
                     <tbody className="divide-y divide-slate-50">
                         {[...history].reverse().map((res) => {
                             const scores = res.scores;
-                            const dominant = Object.entries(scores).sort((a,b) => b[1]-a[1])[0][0];
+                            // Fix: Cast values to number for arithmetic sorting
+                            const dominant = Object.entries(scores).sort((a,b) => (b[1] as number) - (a[1] as number))[0][0];
                             const label = dominant === 'D' ? 'Dominante' : dominant === 'I' ? 'Influente' : dominant === 'S' ? 'Estável' : 'Analítico';
                             
                             return (

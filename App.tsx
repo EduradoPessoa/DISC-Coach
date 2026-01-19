@@ -33,7 +33,8 @@ import SaasAdminCoupons from './views/admin/SaasAdminCoupons';
 import SaasAdminAffiliates from './views/admin/SaasAdminAffiliates';
 import TeamManagement from './views/admin/TeamManagement';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Fix: Made children optional to prevent TypeScript error when used in Route element
+const ProtectedRoute = ({ children }: { children?: React.ReactNode }) => {
   const { isAuthenticated } = useUser();
   if (!isAuthenticated) return <Navigate to="/auth/login" replace />;
   return <>{children}</>;
