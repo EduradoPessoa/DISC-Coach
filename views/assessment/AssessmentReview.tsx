@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -6,42 +7,50 @@ import { useAssessment } from '../../context/AssessmentContext';
 import { QUESTIONS } from '../../data/questions';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
-import { CheckCircle, AlertCircle, Edit2 } from 'lucide-react';
+import { Edit2, Loader2 } from 'lucide-react';
 
 const AssessmentReview = () => {
   const navigate = useNavigate();
   const { answers, submitAssessment } = useAssessment();
   const { language, t } = useLanguage();
   const { addNotification } = useNotification();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = QUESTIONS.length;
   const isComplete = answeredCount === totalQuestions;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isComplete) {
-      addNotification('error', 'Please answer all questions before submitting.');
+      addNotification('error', 'Por favor, responda todas as questões antes de enviar.');
       return;
     }
-    const newResult = submitAssessment();
-    addNotification('success', 'Assessment submitted successfully!');
-    // Navigate to the specific result ID
-    navigate(`/results/summary/${newResult.id}`);
+    
+    setIsSubmitting(true);
+    try {
+      const newResult = await submitAssessment();
+      addNotification('success', 'Avaliação enviada com sucesso!');
+      navigate(`/results/summary/${newResult.id}`);
+    } catch (error) {
+      addNotification('error', 'Falha ao salvar avaliação. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto py-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Review Your Answers</h1>
-        <p className="text-slate-500">Please review your responses before finalizing the assessment.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Revisão de Respostas</h1>
+        <p className="text-slate-500">Revise suas escolhas antes de processar sua inteligência comportamental.</p>
       </div>
 
       <div className="grid gap-6 mb-8">
         <Card>
             <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-slate-900">Summary</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Resumo</h3>
                 <div className={`px-3 py-1 rounded-full text-sm font-medium ${isComplete ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {isComplete ? 'Ready to Submit' : 'Incomplete'}
+                    {isComplete ? 'Pronto para Enviar' : 'Incompleto'}
                 </div>
             </div>
             
@@ -55,7 +64,7 @@ const AssessmentReview = () => {
                         4: t('assessment.agree'),
                         5: t('assessment.stronglyAgree')
                     };
-                    const answerLabel = answerVal ? labels[answerVal as keyof typeof labels] : 'Not Answered';
+                    const answerLabel = answerVal ? labels[answerVal as keyof typeof labels] : 'Não Respondida';
 
                     return (
                         <div key={q.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
@@ -76,7 +85,8 @@ const AssessmentReview = () => {
                                 <button 
                                     onClick={() => navigate(`/assessment/question/${q.id}`)}
                                     className="text-slate-400 hover:text-indigo-600 transition-colors"
-                                    title="Edit Answer"
+                                    title="Editar Resposta"
+                                    disabled={isSubmitting}
                                 >
                                     <Edit2 className="w-4 h-4" />
                                 </button>
@@ -90,16 +100,19 @@ const AssessmentReview = () => {
 
       <div className="flex justify-end gap-4">
          <Button 
-            label="Back to Assessment" 
+            label="Voltar" 
             variant="secondary" 
             onClick={() => navigate(`/assessment/question/${totalQuestions}`)} 
+            disabled={isSubmitting}
          />
          <Button 
-            label="Submit Assessment" 
+            label={isSubmitting ? "Enviando..." : "Finalizar e Ver Resultados"} 
             onClick={handleSubmit} 
-            disabled={!isComplete}
-            className={!isComplete ? 'opacity-50 cursor-not-allowed' : ''}
-         />
+            disabled={!isComplete || isSubmitting}
+            className={`${!isComplete || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''} flex items-center gap-2`}
+         >
+           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+         </Button>
       </div>
     </div>
   );

@@ -11,6 +11,8 @@ import { AssessmentProvider } from './context/AssessmentContext';
 // Views
 import Landing from './views/Landing';
 import Login from './views/auth/Login';
+import ForgotPassword from './views/auth/ForgotPassword';
+import ResetPassword from './views/auth/ResetPassword';
 import Onboarding from './views/auth/Onboarding';
 import Dashboard from './views/Dashboard';
 import StartAssessment from './views/assessment/StartAssessment';
@@ -81,6 +83,8 @@ const App = () => {
 
                 <Route path="/auth" element={<AuthLayout />}>
                   <Route path="login" element={<Login />} />
+                  <Route path="forgot-password" element={<ForgotPassword />} />
+                  <Route path="reset-password/:token" element={<ResetPassword />} />
                   <Route path="onboarding" element={<Onboarding />} />
                 </Route>
                 

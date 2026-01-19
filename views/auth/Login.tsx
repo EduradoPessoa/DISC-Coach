@@ -1,50 +1,35 @@
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useUser } from '../../context/UserContext';
 import { useNotification } from '../../context/NotificationContext';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { setUser } = useUser();
+  const { login } = useUser();
   const { addNotification } = useNotification();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    // Lógica especial para o Admin do SaaS Eduardo
-    if (email === 'eduardo@phoenyx.com.br' && password === 'P3naBranc@') {
-      setUser({
-        id: 'saas_admin_eduardo',
-        name: 'Eduardo Pessoa',
-        email: 'eduardo@phoenyx.com.br',
-        role: 'saas-admin',
-        position: 'SaaS Founder',
-        department: 'Diretoria',
-        plan: 'pro'
-      });
-      addNotification('success', 'Bem-vindo Eduardo! Acesso SaaS Admin liberado.');
+    try {
+      await login(email, password);
+      addNotification('success', 'Acesso autorizado.');
       navigate('/dashboard');
-      return;
+    } catch (error: any) {
+      console.error(error);
+      addNotification('error', 'Falha na autenticação. Verifique suas credenciais.');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Mock login para outros usuários
-    setUser({
-      id: `u_${Date.now()}`,
-      name: email.split('@')[0],
-      email: email,
-      role: 'user',
-      position: 'Executivo',
-      department: 'Corporativo',
-      plan: 'free'
-    });
-    
-    navigate('/dashboard');
   };
 
   return (
@@ -57,23 +42,39 @@ const Login = () => {
         
         <Input 
             label="E-mail Corporativo" 
-            placeholder="ex: eduardo@phoenyx.com.br" 
+            placeholder="ex: seu@email.com" 
             type="email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required 
         />
-        <Input 
-            label="Senha" 
-            type="password" 
-            placeholder="••••••••" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required 
-        />
+        <div className="space-y-1">
+            <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-slate-700">Senha</label>
+                {/* Fixed: Removed non-existent 'size' prop from Link component which was causing a TypeScript error */}
+                <Link to="/auth/forgot-password" className="text-xs text-indigo-600 font-bold hover:underline">
+                    Esqueceu a senha?
+                </Link>
+            </div>
+            <Input 
+                type="password" 
+                placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+            />
+        </div>
         
         <div className="pt-2 space-y-3">
-            <Button label="Acessar Sistema" fullWidth type="submit" className="h-12" />
+            <Button 
+              label={isLoading ? "Autenticando..." : "Acessar Sistema"} 
+              fullWidth 
+              type="submit" 
+              className="h-12 font-black"
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            </Button>
             
             <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-2">
                 <ShieldCheck className="w-3 h-3" />

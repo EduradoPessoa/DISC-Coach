@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const generateDiscInsights = async (
@@ -25,8 +26,9 @@ export const generateDiscInsights = async (
   systemInstruction += ` Responda em Markdown. Idioma: ${langMap[language]}.`;
 
   try {
+    // Fix: Using gemini-3-pro-preview for complex reasoning task (executive coaching)
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: `Perfil DISC: ${profile}. Contexto: ${context}.`,
       config: {
         systemInstruction: systemInstruction,
@@ -48,8 +50,9 @@ export const generateDevelopmentSuggestions = async (
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
+    // Fix: Using gemini-3-pro-preview for complex reasoning task (strategy development)
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: `Gere 4 sugestões de ações de desenvolvimento para um executivo com scores DISC D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}.`,
       config: {
         systemInstruction: `Você é um Coach Executivo. Gere um JSON contendo uma lista de sugestões de ações práticas. Cada sugestão deve ter 'title', 'description' e 'category' (D, I, S ou C). Idioma: ${language}.`,
@@ -75,7 +78,7 @@ export const generateDevelopmentSuggestions = async (
       }
     });
 
-    return JSON.parse(response.text).suggestions;
+    return JSON.parse(response.text || "{}").suggestions || [];
   } catch (error) {
     console.error("Suggestions Error:", error);
     return [];
@@ -96,8 +99,9 @@ export const generateFullDiscReport = async (
   Contexto adicional: ${userContext}.`;
 
   try {
+    // Fix: Using gemini-3-pro-preview for complex reasoning task (human capital consulting)
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
         systemInstruction: `Você é um consultor de capital humano para CEOs. 
@@ -121,7 +125,7 @@ export const generateFullDiscReport = async (
       }
     });
 
-    return JSON.parse(response.text);
+    return JSON.parse(response.text || "{}");
   } catch (error) {
     console.error("Full Report Error:", error);
     throw error;
