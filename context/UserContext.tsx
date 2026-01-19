@@ -36,6 +36,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Pequeno delay para garantir que o seed do api.ts ocorra na primeira leitura
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const storedSession = localStorage.getItem(SESSION_KEY);
       if (storedSession) {
         try {
@@ -49,6 +52,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         } catch (error) {
           console.error("Erro ao carregar sessão:", error);
+          localStorage.removeItem(SESSION_KEY);
         }
       }
       setIsLoading(false);
@@ -58,27 +62,34 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (email: string, pass: string) => {
-    // Simulação de autenticação (em um app real, o Cloud Run verificaria no DB)
-    const existingUser = await api.getUserByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    // Busca o usuário pelo e-mail normalizado
+    const existingUser = await api.getUserByEmail(normalizedEmail);
     
     if (existingUser) {
-      setUser(existingUser);
-      setIsAuthenticated(true);
-      localStorage.setItem(SESSION_KEY, existingUser.id);
+      // Simulação: Aceita qualquer senha que não seja vazia no mock
+      if (pass.length > 0) {
+        setUser(existingUser);
+        setIsAuthenticated(true);
+        localStorage.setItem(SESSION_KEY, existingUser.id);
+      } else {
+        throw new Error("Senha obrigatória.");
+      }
     } else {
-      throw new Error("Usuário não encontrado ou credenciais inválidas.");
+      throw new Error("E-mail não encontrado. Você já criou sua conta?");
     }
   };
 
   const register = async (email: string, pass: string, profile: Partial<User>) => {
-    const existing = await api.getUserByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await api.getUserByEmail(normalizedEmail);
     if (existing) throw new Error("E-mail já cadastrado.");
 
     const newUser: User = {
       id: `usr_${Date.now()}`,
-      name: profile.name || email.split('@')[0],
-      email: email,
-      role: email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+      name: profile.name || normalizedEmail.split('@')[0],
+      email: normalizedEmail,
+      role: normalizedEmail === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
       position: profile.position || 'Executivo',
       department: profile.department || 'Corporativo',
       plan: 'free'
@@ -128,7 +139,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
            <div className="text-center">
               <div className="stripe-loader mx-auto mb-4"></div>
-              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Iniciando Ambiente Executivo...</p>
+              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest font-sans">Carregando Ambiente...</p>
            </div>
         </div>
       )}

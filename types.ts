@@ -11,7 +11,18 @@ export interface User {
   avatar?: string;
   plan: 'free' | 'pro';
   subscriptionStatus?: 'active' | 'past_due' | 'canceled' | null;
-  invitedBy?: string; // ID do Team Admin que convidou
+  invitedBy?: string; 
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: UserRole;
+  discount: number;
+  token: string;
+  used: boolean;
+  invitedBy: string;
+  createdAt: number;
 }
 
 export interface Question {
@@ -53,33 +64,7 @@ export interface AssessmentResult {
   };
 }
 
-export interface FinanceRecord {
-  id: string;
-  date: string;
-  amount: number;
-  status: 'received_stripe' | 'payout_done' | 'pending';
-  customerName: string;
-  type: 'subscription' | 'manual';
-}
-
-export interface Coupon {
-  code: string;
-  discountPercentage: number;
-  status: 'active' | 'expired';
-  usedCount: number;
-}
-
-export interface Affiliate {
-  id: string;
-  name: string;
-  email: string;
-  totalSales: number;
-  commissionEarned: number;
-}
-
-// Fix: Added missing types Language, NotificationType and AppNotification
 export type Language = 'en' | 'pt' | 'es';
-
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
 export interface AppNotification {

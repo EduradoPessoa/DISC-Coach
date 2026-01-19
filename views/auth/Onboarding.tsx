@@ -1,19 +1,22 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useUser } from '../../context/UserContext';
 import { useNotification } from '../../context/NotificationContext';
-import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { api } from '../../services/api';
+import { Loader2, ArrowLeft, AlertCircle, Ticket } from 'lucide-react';
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register } = useUser();
   const { addNotification } = useNotification();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [inviteData, setInviteData] = useState<any>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +25,28 @@ const Onboarding = () => {
     position: '',
     department: ''
   });
+
+  const inviteToken = searchParams.get('token');
+
+  useEffect(() => {
+    if (inviteToken) {
+      const validateInvite = async () => {
+        try {
+          const data = await api.getInvitationByToken(inviteToken);
+          if (data) {
+            setInviteData(data);
+            setFormData(prev => ({ ...prev, email: data.email }));
+            addNotification('info', `Convite VIP detectado: Acesso 100% Gratuito.`);
+          } else {
+            addNotification('warning', 'Convite inválido ou já utilizado.');
+          }
+        } catch (e) {
+          console.error("Erro ao validar convite", e);
+        }
+      };
+      validateInvite();
+    }
+  }, [inviteToken]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -38,29 +63,34 @@ const Onboarding = () => {
 
     setIsLoading(true);
     try {
+      // Registra o usuário
       await register(formData.email, formData.password, {
         name: formData.name,
         position: formData.position,
         department: formData.department
       });
+
+      // Se houver convite, aplicamos as permissões especiais no banco
+      if (inviteData && inviteToken) {
+        const currentUser = await api.getUserByEmail(formData.email);
+        if (currentUser) {
+          await api.saveUser({
+            ...currentUser,
+            plan: 'pro',
+            role: 'team-admin',
+            subscriptionStatus: 'active',
+            invitedBy: inviteData.invitedBy
+          });
+          await api.markInvitationAsUsed(inviteToken);
+          addNotification('success', 'Acesso Pro ativado via convite!');
+        }
+      }
+
       addNotification('success', 'Conta criada com sucesso! Bem-vindo ao DISC Coach.');
       navigate('/dashboard');
     } catch (error: any) {
       console.error(error);
-      let msg = 'Erro ao criar conta. Tente novamente.';
-      
-      if (error.code === 'auth/configuration-not-found') {
-        msg = 'Erro de Configuração no Firebase.';
-        setErrorDetails('O provedor de "E-mail/Senha" não está ativado no console do Firebase. Vá em Autenticação > Sign-in Method e ative-o.');
-      } else if (error.code === 'auth/email-already-in-use') {
-        msg = 'Este e-mail já está em uso.';
-      } else if (error.code === 'auth/invalid-email') {
-        msg = 'E-mail inválido.';
-      } else if (error.code === 'auth/operation-not-allowed') {
-        msg = 'Operação não permitida.';
-        setErrorDetails('Verifique se o login com E-mail/Senha está habilitado no seu console Firebase.');
-      }
-      
+      const msg = error.message || 'Erro ao criar conta. Verifique sua conexão ou tente novamente.';
       addNotification('error', msg);
     } finally {
       setIsLoading(false);
@@ -75,11 +105,23 @@ const Onboarding = () => {
             <p className="text-sm text-slate-500">Inicie sua jornada de liderança hoje</p>
         </div>
 
+        {inviteData && (
+          <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center gap-3 text-indigo-800 animate-in slide-in-from-top-2 duration-500">
+            <div className="bg-white p-2 rounded-xl shadow-sm">
+                <Ticket className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div className="text-[10px] leading-relaxed font-black uppercase tracking-widest">
+                Benefício Ativado: 100% de desconto <br/>
+                <span className="text-indigo-600">Acesso Administrativo VIP</span>
+            </div>
+          </div>
+        )}
+
         {errorDetails && (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-start gap-3 text-red-800 animate-in fade-in duration-300">
+          <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-start gap-3 text-red-800">
             <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
             <div className="text-xs leading-relaxed">
-              <p className="font-bold mb-1">Ação Necessária:</p>
+              <p className="font-bold mb-1">Status do Servidor:</p>
               {errorDetails}
             </div>
           </div>
@@ -102,6 +144,8 @@ const Onboarding = () => {
           value={formData.email}
           onChange={handleChange}
           required 
+          disabled={!!inviteData} // Bloqueia e-mail se vier do convite
+          className={inviteData ? "bg-slate-50 cursor-not-allowed text-slate-400" : ""}
         />
 
         <Input 
@@ -127,7 +171,7 @@ const Onboarding = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Departamento</label>
                 <select 
                     name="department"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white text-slate-900"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white text-slate-900 text-sm"
                     value={formData.department}
                     onChange={handleChange}
                     required
