@@ -1,3 +1,4 @@
+
 {
   "name": "disc-coach-level-c",
   "private": true,
@@ -6,17 +7,22 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview --host 0.0.0.0 --port $PORT"
   },
   "dependencies": {
     "@google/genai": "^1.32.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.474.0",
+    "marked": "^11.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5",
     "recharts": "^2.15.0"
   },
   "devDependencies": {
+    "@types/marked": "^5.0.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",

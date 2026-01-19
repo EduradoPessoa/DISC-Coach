@@ -1,13 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
-import { auth } from '../services/firebaseConfig';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut 
-} from 'firebase/auth';
 import { api } from '../services/api';
 
 interface UserContextType {
@@ -32,6 +25,8 @@ const defaultUser: User = {
   plan: 'free'
 };
 
+const SESSION_KEY = 'dc_session_v1';
+
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -40,48 +35,47 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
+    const checkAuth = async () => {
+      const storedSession = localStorage.getItem(SESSION_KEY);
+      if (storedSession) {
         try {
-          const userData = await api.getUser(firebaseUser.uid);
+          const userId = storedSession;
+          const userData = await api.getUser(userId);
           if (userData) {
             setUser(userData);
+            setIsAuthenticated(true);
           } else {
-            const newUser: User = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              email: firebaseUser.email || '',
-              role: firebaseUser.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
-              position: 'Executivo',
-              department: 'Corporativo',
-              plan: 'free'
-            };
-            await api.saveUser(newUser);
-            setUser(newUser);
+            localStorage.removeItem(SESSION_KEY);
           }
-          setIsAuthenticated(true);
         } catch (error) {
-          console.error("Erro ao carregar dados do usuário:", error);
+          console.error("Erro ao carregar sessão:", error);
         }
-      } else {
-        setUser(defaultUser);
-        setIsAuthenticated(false);
       }
       setIsLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    checkAuth();
   }, []);
 
   const login = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    // Simulação de autenticação (em um app real, o Cloud Run verificaria no DB)
+    const existingUser = await api.getUserByEmail(email);
+    
+    if (existingUser) {
+      setUser(existingUser);
+      setIsAuthenticated(true);
+      localStorage.setItem(SESSION_KEY, existingUser.id);
+    } else {
+      throw new Error("Usuário não encontrado ou credenciais inválidas.");
+    }
   };
 
   const register = async (email: string, pass: string, profile: Partial<User>) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    
+    const existing = await api.getUserByEmail(email);
+    if (existing) throw new Error("E-mail já cadastrado.");
+
     const newUser: User = {
-      id: cred.user.uid,
+      id: `usr_${Date.now()}`,
       name: profile.name || email.split('@')[0],
       email: email,
       role: email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
@@ -93,6 +87,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await api.saveUser(newUser);
     setUser(newUser);
     setIsAuthenticated(true);
+    localStorage.setItem(SESSION_KEY, newUser.id);
   };
 
   const handleSetUser = (newUser: User) => {
@@ -111,7 +106,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
-    await signOut(auth);
+    setUser(defaultUser);
+    setIsAuthenticated(false);
+    localStorage.removeItem(SESSION_KEY);
   };
 
   return (
@@ -131,7 +128,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
            <div className="text-center">
               <div className="stripe-loader mx-auto mb-4"></div>
-              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Sincronizando com Cloud...</p>
+              <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Iniciando Ambiente Executivo...</p>
            </div>
         </div>
       )}
