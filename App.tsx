@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
@@ -32,7 +33,7 @@ import TeamManagement from './views/admin/TeamManagement';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useUser();
-  if (!isAuthenticated) return <Navigate to="/auth/login" />;
+  if (!isAuthenticated) return <Navigate to="/auth/login" replace />;
   return <>{children}</>;
 };
 
@@ -75,6 +76,7 @@ const App = () => {
           <AssessmentProvider>
             <HashRouter>
               <Routes>
+                {/* Public Route: Landing Page is the system entry point */}
                 <Route path="/" element={<Landing />} />
 
                 <Route path="/auth" element={<AuthLayout />}>
@@ -105,6 +107,9 @@ const App = () => {
                   {/* Team Admin Routes */}
                   <Route path="/admin/team" element={<TeamManagement />} />
                 </Route>
+
+                {/* Catch all redirect to root */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </HashRouter>
           </AssessmentProvider>

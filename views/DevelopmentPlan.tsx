@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
@@ -7,8 +8,7 @@ import { useAssessment } from '../context/AssessmentContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { generateDevelopmentSuggestions, generateDiscInsights } from '../services/geminiService';
-// Fix: Added missing AlertCircle import
-import { Target, Calendar, CheckSquare, Sparkles, Loader2, Plus, Trash2, CheckCircle2, MessageSquareText, AlertCircle } from 'lucide-react';
+import { Target, Sparkles, Loader2, Plus, Trash2, MessageSquareText, AlertCircle } from 'lucide-react';
 
 const DevelopmentPlan = () => {
   const { userId } = useParams();
@@ -16,7 +16,7 @@ const DevelopmentPlan = () => {
   const { addNotification } = useNotification();
   const { history, focusAreas, addFocusArea, updateFocusArea, removeFocusArea } = useAssessment();
   
-  // Use the specific result based on URL or fallback to the latest in history
+  // Localiza o resultado específico do usuário ou o mais recente do histórico
   const currentResult = history.find(r => r.id === userId) || (history.length > 0 ? history[history.length - 1] : null);
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -32,7 +32,7 @@ const DevelopmentPlan = () => {
     setIsLoadingSuggestions(true);
     try {
       const data = await generateDevelopmentSuggestions(currentResult.scores, language);
-      setSuggestions(data);
+      setSuggestions(data || []);
     } catch (e) {
       addNotification('error', 'Erro ao gerar sugestões da IA.');
     } finally {
@@ -119,7 +119,7 @@ const DevelopmentPlan = () => {
               {isLoadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-indigo-500" />}
             </Button>
             <Button 
-              label="Analisar Progresso" 
+              label="Analisar" 
               onClick={handleAnalyzePlan}
               disabled={isAnalyzingPlan || focusAreas.length === 0 || !currentResult}
               className="flex items-center gap-2"
@@ -196,7 +196,7 @@ const DevelopmentPlan = () => {
                     <Target className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2">
                       <h4 className="font-bold text-slate-900 text-lg">{area.title}</h4>
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getStatusColor(area.status)}`}>
                         {area.status.replace('_', ' ')}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { DiscScore, AssessmentResult, FocusArea } from '../types';
 import { QUESTIONS } from '../data/questions';
 import { useUser } from './UserContext';
@@ -50,7 +50,7 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     return saved ? JSON.parse(saved) : [];
   });
 
-  const latestResult = history.length > 0 ? history[history.length - 1] : null;
+  const latestResult = useMemo(() => history.length > 0 ? history[history.length - 1] : null, [history]);
   
   useEffect(() => {
     localStorage.setItem('disc_current_answers', JSON.stringify(answers));
@@ -104,11 +104,7 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       scores: finalScores
     };
     
-    setHistory(prev => {
-      const newHistory = [...prev, newResult];
-      return newHistory;
-    });
-
+    setHistory(prev => [...prev, newResult]);
     setIsComplete(true);
     setAnswers({}); 
     setStartTime(null);
@@ -116,12 +112,9 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
   }, [calculateScores, user.id]);
 
   const saveAnalysisToResult = useCallback((resultId: string, analysis: any) => {
-    setHistory(prev => {
-      const updated = prev.map(res => 
-        res.id === resultId ? { ...res, analysis } : res
-      );
-      return updated;
-    });
+    setHistory(prev => prev.map(res => 
+      res.id === resultId ? { ...res, analysis } : res
+    ));
   }, []);
 
   const addFocusArea = useCallback((area: Omit<FocusArea, 'id' | 'status'>) => {
