@@ -6,7 +6,7 @@ import { QUESTIONS } from '../../data/questions';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useAssessment } from '../../context/AssessmentContext';
-import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, ChevronLeft } from 'lucide-react';
 
 const Question = () => {
   const { id } = useParams();
@@ -38,15 +38,18 @@ const Question = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleNext = () => {
-    if (selectedOption !== null) {
-      saveAnswer(currentId, selectedOption);
+  const handleOptionSelect = (val: number) => {
+    setSelectedOption(val);
+    saveAnswer(currentId, val);
+    
+    // Auto-advance after a small delay for visual feedback
+    setTimeout(() => {
       if (isLast) {
         navigate('/assessment/review');
       } else {
         navigate(`/assessment/question/${currentId + 1}`);
       }
-    }
+    }, 350);
   };
 
   const handlePrevious = () => {
@@ -99,24 +102,24 @@ const Question = () => {
             ].map((opt) => (
                 <button
                     key={opt.val}
-                    onClick={() => setSelectedOption(opt.val)}
+                    onClick={() => handleOptionSelect(opt.val)}
                     className={`group w-full p-4 rounded-lg border text-left transition-all duration-200 flex items-center justify-between ${
                         selectedOption === opt.val 
-                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600 shadow-md' 
+                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600 shadow-md translate-x-1' 
                         : 'border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700'
                     }`}
                 >
                     <span className="font-medium">{opt.label}</span>
                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                        selectedOption === opt.val ? 'border-indigo-600' : 'border-slate-300 group-hover:border-slate-400'
+                        selectedOption === opt.val ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300 group-hover:border-slate-400'
                     }`}>
-                        {selectedOption === opt.val && <div className="w-2.5 h-2.5 rounded-full bg-indigo-600"></div>}
+                        {selectedOption === opt.val && <div className="w-2 h-2 rounded-full bg-white"></div>}
                     </div>
                 </button>
             ))}
         </div>
 
-        <div className="flex justify-between items-center px-4 max-w-lg mx-auto pt-6 border-t border-slate-50">
+        <div className="flex justify-start items-center px-4 max-w-lg mx-auto pt-6 border-t border-slate-50">
             <Button 
                 label={t('common.back')} 
                 variant="ghost"
@@ -126,13 +129,10 @@ const Question = () => {
             >
                 <ChevronLeft className="w-4 h-4 mr-1" />
             </Button>
-
-            <Button 
-                label={isLast ? 'Review Answers' : t('common.next')} 
-                disabled={selectedOption === null}
-                onClick={handleNext}
-                className="px-8"
-            />
+            
+            <p className="ml-auto text-xs text-slate-400 italic">
+                Clique em uma opção para avançar
+            </p>
         </div>
       </Card>
     </div>

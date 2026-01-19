@@ -1,11 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 
+/**
+ * Generates DISC insights using the Gemini API.
+ * Follows the pattern: const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+ */
 export const generateDiscInsights = async (
   profile: string,
   context: string,
   mode: 'suggest' | 'coach' | 'audit',
   language: 'en' | 'pt' | 'es' = 'en'
 ): Promise<string> => {
+  // Use a fresh instance to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   let systemInstruction = "Você é um Coach Executivo sênior especializado em avaliações DISC para profissionais de C-Level.";
@@ -39,6 +44,6 @@ export const generateDiscInsights = async (
     return response.text || "Não foi possível gerar insights no momento.";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Erro ao conectar com a IA. Por favor, verifique a chave de API.";
+    return "Erro ao conectar com a IA. Por favor, verifique a chave de API ou sua conexão de rede.";
   }
 };
