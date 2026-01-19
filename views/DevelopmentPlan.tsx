@@ -7,27 +7,31 @@ import { useAssessment } from '../context/AssessmentContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { generateDevelopmentSuggestions, generateDiscInsights } from '../services/geminiService';
-import { Target, Calendar, CheckSquare, Sparkles, Loader2, Plus, Trash2, CheckCircle2, MessageSquareText } from 'lucide-react';
+// Fix: Added missing AlertCircle import
+import { Target, Calendar, CheckSquare, Sparkles, Loader2, Plus, Trash2, CheckCircle2, MessageSquareText, AlertCircle } from 'lucide-react';
 
 const DevelopmentPlan = () => {
   const { userId } = useParams();
   const { language } = useLanguage();
   const { addNotification } = useNotification();
-  const { latestResult, focusAreas, addFocusArea, updateFocusArea, removeFocusArea } = useAssessment();
+  const { history, focusAreas, addFocusArea, updateFocusArea, removeFocusArea } = useAssessment();
   
+  // Use the specific result based on URL or fallback to the latest in history
+  const currentResult = history.find(r => r.id === userId) || (history.length > 0 ? history[history.length - 1] : null);
+
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isAnalyzingPlan, setIsAnalyzingPlan] = useState(false);
   const [planFeedback, setPlanFeedback] = useState<string | null>(null);
 
   const fetchSuggestions = async () => {
-    if (!latestResult) {
+    if (!currentResult) {
       addNotification('warning', 'Realize uma avaliação primeiro para receber sugestões personalizadas.');
       return;
     }
     setIsLoadingSuggestions(true);
     try {
-      const data = await generateDevelopmentSuggestions(latestResult.scores, language);
+      const data = await generateDevelopmentSuggestions(currentResult.scores, language);
       setSuggestions(data);
     } catch (e) {
       addNotification('error', 'Erro ao gerar sugestões da IA.');
@@ -37,6 +41,7 @@ const DevelopmentPlan = () => {
   };
 
   const handleAnalyzePlan = async () => {
+    if (!currentResult) return;
     if (focusAreas.length === 0) {
       addNotification('info', 'Adicione algumas áreas de foco antes da análise.');
       return;
@@ -45,7 +50,7 @@ const DevelopmentPlan = () => {
     try {
       const context = `O executivo possui as seguintes áreas de foco em seu PDI: ${focusAreas.map(a => `${a.title} (${a.category})`).join(', ')}. Status atual: ${focusAreas.filter(a => a.status === 'completed').length} concluídas de ${focusAreas.length}.`;
       const feedback = await generateDiscInsights(
-        JSON.stringify(latestResult?.scores),
+        JSON.stringify(currentResult.scores),
         context,
         'coach',
         language
@@ -60,10 +65,10 @@ const DevelopmentPlan = () => {
   };
 
   useEffect(() => {
-    if (latestResult && suggestions.length === 0) {
+    if (currentResult && suggestions.length === 0) {
       fetchSuggestions();
     }
-  }, [latestResult]);
+  }, [currentResult?.id]);
 
   const handleAddSuggestion = (suggestion: any) => {
     addFocusArea({
@@ -99,14 +104,16 @@ const DevelopmentPlan = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Plano de Desenvolvimento (PDI)</h1>
-          <p className="text-slate-500 font-medium">Foco atual: {userId === 'me' ? 'Pessoal' : 'Visualização de Gestor'}</p>
+          <p className="text-slate-500 font-medium">
+            Foco atual: {currentResult ? `Avaliação de ${new Date(currentResult.timestamp).toLocaleDateString()}` : 'Nenhuma avaliação encontrada'}
+          </p>
         </div>
         <div className="flex gap-2">
             <Button 
               label="Sugestões IA" 
               variant="secondary" 
               onClick={fetchSuggestions}
-              disabled={isLoadingSuggestions}
+              disabled={isLoadingSuggestions || !currentResult}
               className="flex items-center gap-2 bg-white"
             >
               {isLoadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-indigo-500" />}
@@ -114,13 +121,21 @@ const DevelopmentPlan = () => {
             <Button 
               label="Analisar Progresso" 
               onClick={handleAnalyzePlan}
-              disabled={isAnalyzingPlan || focusAreas.length === 0}
+              disabled={isAnalyzingPlan || focusAreas.length === 0 || !currentResult}
               className="flex items-center gap-2"
             >
               {isAnalyzingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquareText className="w-4 h-4" />}
             </Button>
         </div>
       </div>
+
+      {!currentResult && (
+        <Card className="text-center py-12">
+           <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+           <h3 className="text-lg font-bold text-slate-900">Nenhum Assessment encontrado</h3>
+           <p className="text-slate-500">Realize sua primeira avaliação para gerar um plano estratégico.</p>
+        </Card>
+      )}
 
       {planFeedback && (
         <Card className="bg-indigo-900 text-white border-none shadow-2xl shadow-indigo-200 animate-in fade-in slide-in-from-top-4">
@@ -167,7 +182,7 @@ const DevelopmentPlan = () => {
 
         <section className="space-y-4 pt-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Current Focus Areas</h2>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Áreas de Foco Atuais</h2>
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               {focusAreas.length} Ações
             </span>

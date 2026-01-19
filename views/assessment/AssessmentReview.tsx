@@ -23,9 +23,10 @@ const AssessmentReview = () => {
       addNotification('error', 'Please answer all questions before submitting.');
       return;
     }
-    submitAssessment();
+    const newResult = submitAssessment();
     addNotification('success', 'Assessment submitted successfully!');
-    navigate('/results/summary/me');
+    // Navigate to the specific result ID
+    navigate(`/results/summary/${newResult.id}`);
   };
 
   return (

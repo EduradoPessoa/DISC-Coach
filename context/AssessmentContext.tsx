@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { DiscScore, AssessmentResult, FocusArea } from '../types';
 import { QUESTIONS } from '../data/questions';
-// Fix: Import useUser to associate results with the current user
 import { useUser } from './UserContext';
+import { calculateDiscScores } from '../utils/discCalculator';
 
 interface Answers {
   [questionId: number]: number;
@@ -30,12 +29,13 @@ interface AssessmentContextType {
 const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
 
 export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Fix: Access current user to retrieve user.id
   const { user } = useUser();
+  
   const [answers, setAnswers] = useState<Answers>(() => {
     const saved = localStorage.getItem('disc_current_answers');
     return saved ? JSON.parse(saved) : {};
   });
+  
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -92,38 +92,26 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
   }, []);
 
   const calculateScores = useCallback((): DiscScore => {
-    const scores: DiscScore = { D: 0, I: 0, S: 0, C: 0 };
-    const counts: DiscScore = { D: 0, I: 0, S: 0, C: 0 };
-
-    QUESTIONS.forEach(q => {
-      const val = answers[q.id];
-      if (val !== undefined) {
-        scores[q.category] += val;
-        counts[q.category]++;
-      }
-    });
-
-    return {
-      D: counts.D ? Math.round(((scores.D - counts.D) / (counts.D * 4)) * 100) : 0,
-      I: counts.I ? Math.round(((scores.I - counts.I) / (counts.I * 4)) * 100) : 0,
-      S: counts.S ? Math.round(((scores.S - counts.S) / (counts.S * 4)) * 100) : 0,
-      C: counts.C ? Math.round(((scores.C - counts.C) / (counts.C * 4)) * 100) : 0,
-    };
+    return calculateDiscScores(QUESTIONS, answers);
   }, [answers]);
 
-  const submitAssessment = useCallback(() => {
+  const submitAssessment = useCallback((): AssessmentResult => {
     const finalScores = calculateScores();
     const newResult: AssessmentResult = {
       id: `res_${Date.now()}`,
-      // Fix: Added missing userId property required by AssessmentResult type
       userId: user.id,
       timestamp: Date.now(),
       scores: finalScores
     };
     
-    setHistory(prev => [...prev, newResult]);
+    setHistory(prev => {
+      const newHistory = [...prev, newResult];
+      return newHistory;
+    });
+
     setIsComplete(true);
     setAnswers({}); 
+    setStartTime(null);
     return newResult;
   }, [calculateScores, user.id]);
 
