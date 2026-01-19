@@ -8,7 +8,7 @@ import { useAssessment } from '../context/AssessmentContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotification } from '../context/NotificationContext';
 import { generateDevelopmentSuggestions, generateDiscInsights } from '../services/geminiService';
-import { Target, Sparkles, Loader2, Plus, Trash2, MessageSquareText, AlertCircle } from 'lucide-react';
+import { Target, Sparkles, Loader2, Plus, Trash2, MessageSquareText, AlertCircle, BrainCircuit } from 'lucide-react';
 
 const DevelopmentPlan = () => {
   const { userId } = useParams();
@@ -34,6 +34,7 @@ const DevelopmentPlan = () => {
       const data = await generateDevelopmentSuggestions(currentResult.scores, language);
       setSuggestions(data || []);
     } catch (e) {
+      console.error(e);
       addNotification('error', 'Erro ao gerar sugestões da IA.');
     } finally {
       setIsLoadingSuggestions(false);
@@ -65,7 +66,7 @@ const DevelopmentPlan = () => {
   };
 
   useEffect(() => {
-    if (currentResult && suggestions.length === 0) {
+    if (currentResult && suggestions.length === 0 && !isLoadingSuggestions) {
       fetchSuggestions();
     }
   }, [currentResult?.id]);
@@ -119,7 +120,7 @@ const DevelopmentPlan = () => {
               {isLoadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-indigo-500" />}
             </Button>
             <Button 
-              label="Analisar" 
+              label="Analisar Plano" 
               onClick={handleAnalyzePlan}
               disabled={isAnalyzingPlan || focusAreas.length === 0 || !currentResult}
               className="flex items-center gap-2"
@@ -155,44 +156,71 @@ const DevelopmentPlan = () => {
         message="Acesso ao PDI sugerido por IA e análise de plano executivo."
       >
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-indigo-900 font-bold px-1">
-            <h2 className="text-lg">Novas Sugestões</h2>
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2 text-indigo-900 font-bold">
+                <BrainCircuit className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-lg">Sugestões Estratégicas IA</h2>
+            </div>
+            {isLoadingSuggestions && (
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
+                    Sintetizando ações de alto impacto...
+                </span>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {suggestions.map((suggestion, idx) => (
-                <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-indigo-300 transition-all flex flex-col justify-between">
-                  <div>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs mb-3 ${getCategoryColor(suggestion.category)}`}>
-                      {suggestion.category}
+            {isLoadingSuggestions ? (
+                // SKELETON LOADERS
+                [...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm animate-pulse">
+                        <div className="w-8 h-8 bg-slate-100 rounded-lg mb-4"></div>
+                        <div className="h-4 bg-slate-100 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-slate-50 rounded w-full mb-1"></div>
+                        <div className="h-3 bg-slate-50 rounded w-5/6 mb-4"></div>
+                        <div className="h-8 bg-slate-50 rounded-xl w-full mt-2"></div>
                     </div>
-                    <h4 className="font-bold text-slate-900 text-sm mb-2">{suggestion.title}</h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-3">{suggestion.description}</p>
-                  </div>
-                  <button 
-                    onClick={() => handleAddSuggestion(suggestion)}
-                    className="mt-4 flex items-center justify-center gap-2 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-colors"
-                  >
-                    <Plus className="w-3 h-3" /> Adicionar
-                  </button>
+                ))
+            ) : suggestions.length > 0 ? (
+                suggestions.map((suggestion, idx) => (
+                    <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-indigo-300 transition-all flex flex-col justify-between group">
+                      <div>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs mb-3 ${getCategoryColor(suggestion.category)}`}>
+                          {suggestion.category}
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-sm mb-2 group-hover:text-indigo-700 transition-colors">{suggestion.title}</h4>
+                        <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed">{suggestion.description}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleAddSuggestion(suggestion)}
+                        className="mt-4 flex items-center justify-center gap-2 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                      >
+                        <Plus className="w-3 h-3" /> Adicionar ao PDI
+                      </button>
+                    </div>
+                ))
+            ) : !isLoadingSuggestions && currentResult && (
+                <div className="col-span-full py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                    <p className="text-sm text-slate-400">Clique em "Sugestões IA" para gerar recomendações personalizadas.</p>
                 </div>
-            ))}
+            )}
           </div>
         </section>
 
-        <section className="space-y-4 pt-4">
+        <section className="space-y-4 pt-6">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-lg font-bold text-slate-900 tracking-tight">Áreas de Foco Atuais</h2>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {focusAreas.length} Ações
-            </span>
+            <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {focusAreas.length} Ações Planejadas
+                </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
             {focusAreas.length > 0 ? (
               focusAreas.map((area) => (
-                <div key={area.id} className={`bg-white border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-6 transition-all ${area.status === 'completed' ? 'opacity-50 grayscale' : 'border-slate-200'}`}>
-                  <div className={`p-4 rounded-2xl ${getCategoryColor(area.category)}`}>
+                <div key={area.id} className={`bg-white border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-6 transition-all ${area.status === 'completed' ? 'opacity-50 grayscale bg-slate-50' : 'border-slate-200 hover:border-indigo-100 hover:shadow-md'}`}>
+                  <div className={`p-4 rounded-2xl ${getCategoryColor(area.category)} transition-colors`}>
                     <Target className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
@@ -204,14 +232,18 @@ const DevelopmentPlan = () => {
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed">{area.description}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full md:w-auto">
                     <button 
                       onClick={() => updateFocusArea(area.id, { status: area.status === 'planned' ? 'in_progress' : area.status === 'in_progress' ? 'completed' : 'planned' })}
-                      className="py-2 px-4 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors"
+                      className="flex-1 md:flex-none py-2.5 px-6 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
                     >
                       {area.status === 'planned' ? 'Iniciar' : area.status === 'in_progress' ? 'Concluir' : 'Resetar'}
                     </button>
-                    <button onClick={() => removeFocusArea(area.id)} className="p-2.5 text-slate-300 hover:text-red-500 rounded-xl transition-all">
+                    <button 
+                        onClick={() => removeFocusArea(area.id)} 
+                        className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                        title="Remover"
+                    >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
@@ -219,9 +251,11 @@ const DevelopmentPlan = () => {
               ))
             ) : (
               <div className="py-20 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex flex-col items-center justify-center text-center">
-                <Target className="w-10 h-10 text-slate-300 mb-4" />
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
+                    <Target className="w-8 h-8 text-slate-200" />
+                </div>
                 <h3 className="text-lg font-bold text-slate-900">Seu plano está vazio</h3>
-                <p className="text-slate-400 text-sm max-w-xs mx-auto">Escolha sugestões acima ou crie metas manuais para iniciar seu tracking.</p>
+                <p className="text-slate-400 text-sm max-w-xs mx-auto">Escolha sugestões da IA acima ou defina suas próprias metas para começar o acompanhamento.</p>
               </div>
             )}
           </div>
