@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useUser } from '../../context/UserContext';
 import { useNotification } from '../../context/NotificationContext';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ const Onboarding = () => {
   const { addNotification } = useNotification();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,6 +29,7 @@ const Onboarding = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorDetails(null);
     
     if (formData.password.length < 6) {
       addNotification('error', 'A senha deve ter pelo menos 6 caracteres.');
@@ -46,8 +48,19 @@ const Onboarding = () => {
     } catch (error: any) {
       console.error(error);
       let msg = 'Erro ao criar conta. Tente novamente.';
-      if (error.code === 'auth/email-already-in-use') msg = 'Este e-mail já está em uso.';
-      if (error.code === 'auth/invalid-email') msg = 'E-mail inválido.';
+      
+      if (error.code === 'auth/configuration-not-found') {
+        msg = 'Erro de Configuração no Firebase.';
+        setErrorDetails('O provedor de "E-mail/Senha" não está ativado no console do Firebase. Vá em Autenticação > Sign-in Method e ative-o.');
+      } else if (error.code === 'auth/email-already-in-use') {
+        msg = 'Este e-mail já está em uso.';
+      } else if (error.code === 'auth/invalid-email') {
+        msg = 'E-mail inválido.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        msg = 'Operação não permitida.';
+        setErrorDetails('Verifique se o login com E-mail/Senha está habilitado no seu console Firebase.');
+      }
+      
       addNotification('error', msg);
     } finally {
       setIsLoading(false);
@@ -61,6 +74,16 @@ const Onboarding = () => {
             <h3 className="text-xl font-black text-slate-900 tracking-tight">Criar Nova Conta</h3>
             <p className="text-sm text-slate-500">Inicie sua jornada de liderança hoje</p>
         </div>
+
+        {errorDetails && (
+          <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-start gap-3 text-red-800 animate-in fade-in duration-300">
+            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+            <div className="text-xs leading-relaxed">
+              <p className="font-bold mb-1">Ação Necessária:</p>
+              {errorDetails}
+            </div>
+          </div>
+        )}
 
         <Input 
           label="Nome Completo" 

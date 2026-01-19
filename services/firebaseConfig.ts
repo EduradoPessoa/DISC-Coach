@@ -1,5 +1,5 @@
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -14,6 +14,8 @@ const firebaseConfig = {
   measurementId: "G-ZJS4PB4P40"
 };
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase singleton
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
