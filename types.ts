@@ -2,29 +2,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'saas_admin';
+  role: 'user' | 'admin';
   position: string;
   department: string;
   avatar?: string;
-  plan: 'free' | 'unit' | 'pro' | 'clevel';
+  plan: 'free' | 'pro';
   subscriptionStatus?: 'active' | 'past_due' | 'canceled' | null;
-}
-
-export interface PlanConfig {
-  id: string;
-  name: string;
-  price: number;
-  annualDiscountPercent: number;
-  features: string[];
-}
-
-export interface Transaction {
-  id: string;
-  user: string;
-  amount: number;
-  date: string;
-  status: 'paid' | 'pending' | 'failed';
-  plan: string;
 }
 
 export interface Question {
@@ -61,7 +44,7 @@ export type Language = 'en' | 'pt' | 'es';
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
-export interface Notification {
+export interface AppNotification {
   id: string;
   type: NotificationType;
   message: string;

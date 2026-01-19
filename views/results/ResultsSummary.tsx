@@ -1,71 +1,31 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { AIHelper } from '../../components/ui/AIHelper';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useLanguage } from '../../context/LanguageContext';
-import { generatePDF } from '../../utils/pdfGenerator';
-import { useUser } from '../../context/UserContext';
-import { useAssessment } from '../../context/AssessmentContext';
 
 const ResultsSummary = () => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const { t } = useLanguage();
-  const { user } = useUser();
-  const { scores, loadLatestResults, isComplete } = useAssessment();
 
-  useEffect(() => {
-    // If we don't have scores yet, try to load them
-    if (!scores) {
-        loadLatestResults();
-    }
-  }, [scores, loadLatestResults]);
-
-  // Use calculated scores or fallback to mock if loading fails (or show loading)
-  const currentScores = scores || { D: 0, I: 0, S: 0, C: 0 };
-
-  // Calculate Primary Driver (Highest Score)
-  const getPrimaryDriver = (s: typeof currentScores) => {
-    const maxScore = Math.max(s.D, s.I, s.S, s.C);
-    if (maxScore === s.D) return 'D';
-    if (maxScore === s.I) return 'I';
-    if (maxScore === s.S) return 'S';
-    return 'C';
-  };
-
-  const primaryDriver = getPrimaryDriver(currentScores);
-  const profileData = (t(`results.profiles.${primaryDriver}`) as any) || {};
-
+  // Mock Result Data (High C, High D)
   const data = [
-    { name: 'Dominance', score: currentScores.D, color: '#ef4444' }, // Red
-    { name: 'Influence', score: currentScores.I, color: '#eab308' }, // Yellow
-    { name: 'Steadiness', score: currentScores.S, color: '#22c55e' }, // Green
-    { name: 'Compliance', score: currentScores.C, color: '#3b82f6' }, // Blue
+    { name: 'Dominance', score: 75, color: '#ef4444' }, // Red
+    { name: 'Influence', score: 30, color: '#eab308' }, // Yellow
+    { name: 'Steadiness', score: 45, color: '#22c55e' }, // Green
+    { name: 'Compliance', score: 85, color: '#3b82f6' }, // Blue
   ];
 
-  const profileSummary = `D:${currentScores.D}, I:${currentScores.I}, S:${currentScores.S}, C:${currentScores.C}`;
+  const profileSummary = "High Compliance (C) and High Dominance (D).";
   const roleContext = "C-Level Executive, Governance focus.";
 
-  // Use dynamic data if available, otherwise fallback (though fallback logic is minimal now)
-  const descriptors = (profileData.descriptors as string[]) || (t('results.descriptors') as string[]);
-  const commStyleItems = (profileData.commStyle?.items as string[]) || (t('results.commStyle.items') as string[]);
-  const valueOrgItems = (profileData.valueOrg?.items as string[]) || (t('results.valueOrg.items') as string[]);
-  const blindspotsItems = (profileData.blindspots?.items as string[]) || (t('results.blindspots.items') as string[]);
-
-  const handleExportPDF = () => {
-    generatePDF({
-        user: user,
-        scores: currentScores,
-        insight: `DISC Profile Analysis based on scores: D=${currentScores.D}, I=${currentScores.I}, S=${currentScores.S}, C=${currentScores.C}.`,
-        developmentPlan: [] // Pass actual plan if available
-    });
-  };
-
-  if (!scores && !isComplete) {
-      return <div className="p-8 text-center">Loading results...</div>;
-  }
+  const descriptors = t('results.descriptors') as string[];
+  const commStyleItems = t('results.commStyle.items') as string[];
+  const valueOrgItems = t('results.valueOrg.items') as string[];
+  const blindspotsItems = t('results.blindspots.items') as string[];
 
   return (
     <div className="space-y-6">
@@ -75,7 +35,7 @@ const ResultsSummary = () => {
             <p className="text-slate-500">{t('results.profileType')}: <span className="font-semibold text-slate-900">The Architect (CD)</span></p>
         </div>
         <div className="flex gap-2 mt-4 md:mt-0">
-            <Button label={t('results.exportPdf')} variant="secondary" onClick={handleExportPDF} />
+            <Button label={t('results.exportPdf')} variant="secondary" onClick={() => alert("Downloading Report...")} />
             <Button label={t('results.devPlan')} onClick={() => navigate(`/development/${userId}`)} />
         </div>
       </div>

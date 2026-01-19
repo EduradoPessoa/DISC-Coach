@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DISC Coach (Level C)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
       tailwind.config = {
         theme: {
@@ -13,9 +14,21 @@
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
             },
+            colors: {
+              stripe: '#635bff',
+            }
           },
         },
       }
+    </script>
+    <style type="text/css">
+      /* Anti-Flicker / Flash of unstyled content */
+      [v-cloak] { display: none; }
+      body { visibility: hidden; }
+      .ready body { visibility: visible; }
+    </style>
+    <script>
+      window.addEventListener('load', () => document.documentElement.classList.add('ready'));
     </script>
   <script type="importmap">
 {
@@ -32,9 +45,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-  <body>
+  <body class="bg-slate-50">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -18,11 +18,6 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
   const { user } = useUser();
   const navigate = useNavigate();
 
-  // Free for all during Beta/Testing
-  return <>{children}</>;
-
-  // Original Logic (Commented out for open access)
-  /*
   if (user.plan === 'pro') {
     return <>{children}</>;
   }
@@ -48,5 +43,4 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
       </div>
     </div>
   );
-  */
 };

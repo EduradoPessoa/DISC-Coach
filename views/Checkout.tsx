@@ -1,47 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { useUser } from '../context/UserContext';
 import { useNotification } from '../context/NotificationContext';
-import { validateCoupon, createAbacatePaySession } from '../services/abacatePayService';
-import { ShieldCheck, CreditCard, Tag } from 'lucide-react';
+import { validatePromoCode, createStripeCheckoutSession } from '../services/stripeService';
+import { ShieldCheck, CreditCard, Tag, Lock, ArrowRight } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, upgradeToPro } = useUser();
   const { addNotification } = useNotification();
-  
-  const state = location.state as { planId: string; price: number; isAnnual: boolean; isGift: boolean } | undefined;
-  
-  // Defaults if accessed directly
-  const planId = state?.planId || 'clevel';
-  const basePrice = state?.price || 97.90;
-  const isAnnual = state?.isAnnual || false;
   
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [validating, setValidating] = useState(false);
   const [processing, setProcessing] = useState(false);
 
+  const basePrice = 97.00;
   const finalPrice = basePrice * ((100 - discount) / 100);
 
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
     setValidating(true);
     try {
-      const result = await validateCoupon(couponCode);
+      const result = await validatePromoCode(couponCode);
       if (result.valid) {
         setDiscount(result.discount);
-        addNotification('success', `Coupon applied! ${result.discount}% off.`);
+        addNotification('success', `Cupom aplicado! ${result.discount}% de desconto.`);
       } else {
         setDiscount(0);
-        addNotification('error', result.message || 'Invalid coupon.');
+        addNotification('error', 'Cupom inválido ou expirado.');
       }
     } catch (e) {
-      addNotification('error', 'Error validating coupon.');
+      addNotification('error', 'Erro ao validar cupom.');
     } finally {
       setValidating(false);
     }
@@ -50,127 +42,122 @@ const Checkout = () => {
   const handlePayment = async () => {
     setProcessing(true);
     try {
-      // Edge case: 100% discount - skip payment provider
       if (discount === 100) {
         setTimeout(() => {
             upgradeToPro();
-            addNotification('success', 'Plan upgraded successfully!');
+            addNotification('success', 'Plano Pro ativado com sucesso!');
             navigate('/checkout/success');
         }, 1500);
         return;
       }
 
-      // Normal flow: AbacatePay
-      // Pass the planId to backend
-      const session = await createAbacatePaySession(finalPrice, user.email, planId);
-      
+      const session = await createStripeCheckoutSession(finalPrice, user.email);
       if (session.success) {
-        addNotification('success', 'Redirecting to payment provider...');
-        
-        // In a real app with external gateway: window.location.href = session.url;
-        // Since we are simulating internal routing for the demo or fallback:
-        if (session.url.startsWith('http')) {
-             window.location.href = session.url;
-        } else {
-             setTimeout(() => {
-                navigate(session.url);
-             }, 1000);
-        }
-      } else {
-         addNotification('error', 'Failed to create payment session.');
-         setProcessing(false);
+        addNotification('info', 'Redirecionando para o ambiente seguro do Stripe...');
+        setTimeout(() => {
+            window.location.href = session.url;
+        }, 1200);
       }
     } catch (e) {
-      addNotification('error', 'Payment failed to initialize.');
+      addNotification('error', 'Falha ao iniciar pagamento com Stripe.');
       setProcessing(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Checkout</h1>
-        <p className="text-slate-500">
-            {state?.isGift ? `Gift Subscription: ` : 'Complete your upgrade: '}
-            <span className="font-semibold text-indigo-600 uppercase">{planId.replace('clevel', 'Level C Pro')}</span>
-        </p>
+    <div className="max-w-4xl mx-auto py-12 px-6">
+      <div className="mb-10 text-center md:text-left">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Finalizar Assinatura</h1>
+        <p className="text-slate-500 mt-2">Você está a um passo da Inteligência Executiva Nível C.</p>
       </div>
 
-      <div className="grid gap-6">
-        <Card>
-            <div className="flex items-start gap-4 mb-6">
-                <div className="bg-indigo-100 p-3 rounded-lg text-indigo-600">
-                    <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                    <h3 className="font-bold text-slate-900 capitalize">
-                        {planId === 'clevel' ? 'Level C Pro' : planId} Plan
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                        {isAnnual ? 'Annual Subscription' : 'Monthly Subscription'}
-                    </p>
-                </div>
-                <div className="ml-auto text-right">
-                    <p className="font-bold text-slate-900">R$ {basePrice.toFixed(2)}</p>
-                    <p className="text-xs text-slate-400">/{isAnnual ? 'year' : 'mo'}</p>
-                </div>
-            </div>
-
-            <div className="border-t border-slate-100 py-4 space-y-2">
-                <div className="flex justify-between text-sm text-slate-600">
-                    <span>Subtotal</span>
-                    <span>R$ {basePrice.toFixed(2)}</span>
-                </div>
-                {discount > 0 && (
-                     <div className="flex justify-between text-sm text-green-600 font-medium">
-                        <span>Discount ({discount}%)</span>
-                        <span>- R$ {(basePrice - finalPrice).toFixed(2)}</span>
+      <div className="grid md:grid-cols-5 gap-8">
+        <div className="md:col-span-3 space-y-6">
+            <Card title="Resumo do Pedido">
+                <div className="flex items-center gap-5 mb-8">
+                    <div className="bg-indigo-600 p-4 rounded-2xl text-white shadow-lg shadow-indigo-200">
+                        <ShieldCheck className="w-8 h-8" />
                     </div>
-                )}
-                <div className="flex justify-between text-lg font-bold text-slate-900 pt-2">
-                    <span>Total</span>
-                    <span>R$ {finalPrice.toFixed(2)}</span>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900">Level C Pro</h3>
+                        <p className="text-slate-500 text-sm">Acesso vitalício aos relatórios e Coach IA</p>
+                    </div>
                 </div>
-            </div>
 
-            {/* Coupon Section */}
-            <div className="mt-6 pt-6 border-t border-slate-100">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Discount Coupon</label>
-                <div className="flex gap-2">
+                <div className="space-y-4 border-t border-slate-100 pt-6">
+                    <div className="flex justify-between text-slate-600">
+                        <span>Preço Base</span>
+                        <span className="font-medium text-slate-900">R$ {basePrice.toFixed(2)}</span>
+                    </div>
+                    {discount > 0 && (
+                        <div className="flex justify-between text-green-600 font-bold bg-green-50 px-3 py-2 rounded-lg">
+                            <span>Desconto Aplicado ({discount}%)</span>
+                            <span>- R$ {(basePrice - finalPrice).toFixed(2)}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between text-2xl font-black text-slate-900 pt-4 border-t border-slate-100">
+                        <span>Total</span>
+                        <span className="text-indigo-600">R$ {finalPrice.toFixed(2)}</span>
+                    </div>
+                </div>
+            </Card>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">Possui um cupom?</label>
+                <div className="flex gap-3">
                     <div className="relative flex-1">
-                        <Tag className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Tag className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
                         <input 
                             type="text" 
-                            className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase"
-                            placeholder="CODE"
+                            className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 uppercase"
+                            placeholder="CÓDIGO"
                             value={couponCode}
                             onChange={(e) => setCouponCode(e.target.value)}
                         />
                     </div>
                     <Button 
-                        label={validating ? "..." : "Apply"} 
+                        label={validating ? "..." : "Aplicar"} 
                         variant="secondary" 
+                        className="px-8 h-auto"
                         onClick={handleApplyCoupon} 
                         disabled={validating || !couponCode}
                     />
                 </div>
-                {discount > 0 && (
-                     <p className="text-xs text-green-600 mt-2">Coupon applied successfully!</p>
-                )}
             </div>
-        </Card>
+        </div>
 
-        <Button 
-            label={processing ? "Processing..." : discount === 100 ? "Complete Upgrade" : "Pay with AbacatePay"}
-            fullWidth 
-            className="h-12 text-lg"
-            onClick={handlePayment}
-            disabled={processing}
-        />
-        
-        <div className="flex justify-center items-center gap-2 text-xs text-slate-400 mt-2">
-            <CreditCard className="w-3 h-3" />
-            <span>Secure payment encrypted by AbacatePay</span>
+        <div className="md:col-span-2">
+            <div className="sticky top-24">
+                <Button 
+                    label={processing ? "Processando..." : discount === 100 ? "Ativar Gratuitamente" : "Pagar com Stripe"}
+                    fullWidth 
+                    className={`h-16 text-lg font-black shadow-xl transition-all ${discount === 100 ? 'bg-green-600 hover:bg-green-700' : 'bg-[#635bff] hover:bg-[#534bb3]'} border-none`}
+                    onClick={handlePayment}
+                    disabled={processing}
+                />
+                
+                <div className="mt-8 space-y-4">
+                    <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Lock className="w-4 h-4" />
+                        </div>
+                        <span>Pagamento 100% Seguro</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                            <CreditCard className="w-4 h-4" />
+                        </div>
+                        <span>Liberação Imediata via Stripe</span>
+                    </div>
+                </div>
+
+                <div className="mt-10 p-6 bg-slate-900 rounded-3xl text-white">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Garantia Level C</p>
+                    <p className="text-sm leading-relaxed opacity-80">
+                        Sua satisfação é nossa prioridade. Se não encontrar valor estratégico nos primeiros 7 dias, devolvemos 100% do valor.
+                    </p>
+                </div>
+            </div>
         </div>
       </div>
     </div>

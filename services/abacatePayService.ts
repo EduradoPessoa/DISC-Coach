@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+// In a real application, these calls would go to your backend, not directly to AbacatePay from the client.
 
 interface CreateBillingResponse {
   url: string;
@@ -33,27 +33,16 @@ export const validateCoupon = async (code: string): Promise<{ valid: boolean; di
   };
 };
 
-export const createAbacatePaySession = async (amount: number, userEmail: string, plan: string): Promise<CreateBillingResponse> => {
-  try {
-      // Call backend to generate the session securely using the stored API Key
-      const response = await apiRequest('/payment/create_checkout.php', 'POST', {
-          amount,
-          email: userEmail,
-          plan
-      });
+export const createAbacatePaySession = async (amount: number, userEmail: string): Promise<CreateBillingResponse> => {
+  // Simulate API latency
+  await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (response && response.url) {
-          return { success: true, url: response.url };
-      } else {
-          throw new Error("Invalid response from payment server");
-      }
-  } catch (error) {
-      console.error("Payment creation failed:", error);
-      // Fallback for dev/demo if backend fails (e.g. no key configured)
-      // In prod, this should just fail.
-      return {
-        success: false,
-        url: '' // Error handling in UI
-      };
-  }
+  console.log(`Creating AbacatePay session for ${userEmail} amount ${amount}`);
+
+  // In a real scenario, the backend would return a URL like: https://abacatepay.com/checkout/sess_123
+  // Here we return our internal route to simulate the redirect back from the gateway.
+  return {
+    success: true,
+    url: `/checkout/success?session_id=mock_abacate_${Date.now()}`
+  };
 };

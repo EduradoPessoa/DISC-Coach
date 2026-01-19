@@ -41,7 +41,6 @@ const Question = () => {
   const handleNext = () => {
     if (selectedOption !== null) {
       saveAnswer(currentId, selectedOption);
-      window.scrollTo(0, 0);
       if (isLast) {
         navigate('/assessment/review');
       } else {

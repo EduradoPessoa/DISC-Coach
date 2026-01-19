@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { generateDiscInsights } from '../../services/geminiService';
 import { Button } from './Button';
-import { Sparkles, RefreshCw, AlertCircle, Zap } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface AIHelperProps {
@@ -24,7 +23,6 @@ export const AIHelper: React.FC<AIHelperProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { language } = useLanguage();
-  const navigate = useNavigate();
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -34,14 +32,12 @@ export const AIHelper: React.FC<AIHelperProps> = ({
       const fullContext = `Request: ${promptTemplate}. User Data: ${JSON.stringify(contextData)}`;
       const result = await generateDiscInsights(discProfile, fullContext, mode, language);
       setInsight(result);
-    } catch (err: any) {
-      setError(err.message || "Failed to generate insights.");
+    } catch (err) {
+      setError("Failed to generate insights.");
     } finally {
       setLoading(false);
     }
   };
-
-  const isQuotaError = error && (error.includes("High Traffic") || error.includes("429") || error.includes("Free Tier"));
 
   return (
     <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-4 relative">
@@ -50,7 +46,7 @@ export const AIHelper: React.FC<AIHelperProps> = ({
           <Sparkles className="w-5 h-5 text-indigo-600" />
           <span>{title}</span>
         </div>
-        {!insight && !loading && !isQuotaError && (
+        {!insight && !loading && (
           <Button 
             label="Generate Insights" 
             variant="ghost" 
@@ -78,29 +74,9 @@ export const AIHelper: React.FC<AIHelperProps> = ({
       )}
 
       {error && (
-        <div className={`mt-3 p-3 rounded-lg border text-sm ${
-          isQuotaError 
-            ? 'bg-amber-50 border-amber-200 text-amber-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <div className="flex items-start gap-2">
-            {isQuotaError ? <Zap className="w-5 h-5 text-amber-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
-            <div>
-              <p className="font-medium mb-1">
-                {isQuotaError ? "High Demand (Free Tier)" : "Generation Failed"}
-              </p>
-              <p className="opacity-90">{error}</p>
-              
-              {isQuotaError && (
-                <button 
-                  onClick={() => navigate('/pricing')}
-                  className="mt-2 text-xs font-bold text-amber-700 hover:text-amber-900 underline"
-                >
-                  Upgrade to Pro for Priority Access →
-                </button>
-              )}
-            </div>
-          </div>
+        <div className="flex items-center space-x-2 text-red-600 text-sm mt-2">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
         </div>
       )}
 

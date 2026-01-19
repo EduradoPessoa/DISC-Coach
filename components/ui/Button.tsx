@@ -1,10 +1,9 @@
-import React, { ElementType } from 'react';
+import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   fullWidth?: boolean;
-  icon?: ElementType;
 }
 
 export const Button: React.FC<ButtonProps> = ({ 
@@ -12,10 +11,9 @@ export const Button: React.FC<ButtonProps> = ({
   variant = 'primary', 
   fullWidth = false, 
   className = '', 
-  icon: Icon,
   ...props 
 }) => {
-  const baseStyles = "px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2";
+  const baseStyles = "px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
     primary: "bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-900",
@@ -29,7 +27,6 @@ export const Button: React.FC<ButtonProps> = ({
       className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
-      {Icon && <Icon className="w-4 h-4" />}
       {label}
     </button>
   );

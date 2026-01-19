@@ -197,37 +197,6 @@ const Settings = () => {
              </div>
           </div>
        </Card>
-
-       {/* Developer Options (For Demo/Testing) */}
-       <div className="pt-8 border-t border-slate-200">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Developer Options</h3>
-          <Card>
-              <div className="flex items-center justify-between">
-                  <div>
-                      <h4 className="font-medium text-slate-900">Current Role: {user.role}</h4>
-                      <p className="text-sm text-slate-500">Switch role to test SaaS Admin features.</p>
-                  </div>
-                  <div className="flex gap-2">
-                      <Button 
-                        label="Set as User" 
-                        variant={user.role === 'user' ? 'primary' : 'secondary'}
-                        onClick={() => {
-                            updateUser({ role: 'user' });
-                            addNotification('info', 'Role switched to User');
-                        }}
-                      />
-                       <Button 
-                        label="Set as SaaS Admin" 
-                        variant={user.role === 'saas_admin' ? 'primary' : 'secondary'}
-                        onClick={() => {
-                            updateUser({ role: 'saas_admin' });
-                            addNotification('success', 'Role switched to SaaS Admin');
-                        }}
-                      />
-                  </div>
-              </div>
-          </Card>
-       </div>
     </div>
   );
 };

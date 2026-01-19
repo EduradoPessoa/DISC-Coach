@@ -1,5 +1,4 @@
-import { AI_CONFIG } from "../config/ai";
-import { apiRequest } from "./api"; // Usando nosso helper de API
+import { GoogleGenAI } from "@google/genai";
 
 export const generateDiscInsights = async (
   profile: string,
@@ -7,31 +6,39 @@ export const generateDiscInsights = async (
   mode: 'suggest' | 'coach' | 'audit',
   language: 'en' | 'pt' | 'es' = 'en'
 ): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  let systemInstruction = AI_CONFIG.systemInstruction;
+  let systemInstruction = "Você é um Coach Executivo sênior especializado em avaliações DISC para profissionais de C-Level.";
   
   if (mode === 'audit') {
-    systemInstruction += AI_CONFIG.modes.audit;
+    systemInstruction += " Foco em governança, compliance de riscos e precisão técnica.";
   } else if (mode === 'coach') {
-    systemInstruction += AI_CONFIG.modes.coach;
+    systemInstruction += " Foco em desenvolvimento de liderança e dinâmicas de equipe de alta performance.";
   } else {
-    systemInstruction += AI_CONFIG.modes.default;
+    systemInstruction += " Forneça resumos executivos rápidos e acionáveis.";
   }
 
-  // Enforce language
-  systemInstruction += ` IMPORTANT: You MUST generate your response entirely in ${AI_CONFIG.languages[language]}.`;
+  const langMap = {
+    en: "Inglês",
+    pt: "Português (Brasil)",
+    es: "Espanhol"
+  };
+  
+  systemInstruction += ` IMPORTANTE: Responda obrigatoriamente em ${langMap[language]}.`;
 
   try {
-    // Agora chamamos nosso Backend PHP em vez da API do Google diretamente
-    const response = await apiRequest('/ai/generate.php', 'POST', {
-      prompt: `Profile: ${profile}. Context: ${context}. Provide insights.`,
-      systemInstruction: systemInstruction
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Perfil DISC: ${profile}. Contexto Executivo: ${context}. Forneça insights estratégicos.`,
+      config: {
+        systemInstruction: systemInstruction,
+        temperature: 0.6,
+      }
     });
     
-    return response.text || "Unable to generate insights at this time.";
-  } catch (error: any) {
-    console.error("AI Service Error:", error);
-    // Retorna a mensagem exata do erro se disponível
-    return error.message || "Error connecting to AI service. Please check server logs.";
+    return response.text || "Não foi possível gerar insights no momento.";
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    return "Erro ao conectar com a IA. Por favor, verifique a chave de API.";
   }
 };

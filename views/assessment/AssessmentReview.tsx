@@ -18,12 +18,12 @@ const AssessmentReview = () => {
   const totalQuestions = QUESTIONS.length;
   const isComplete = answeredCount === totalQuestions;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!isComplete) {
       addNotification('error', 'Please answer all questions before submitting.');
       return;
     }
-    await submitAssessment();
+    submitAssessment();
     addNotification('success', 'Assessment submitted successfully!');
     navigate('/results/summary/me');
   };
