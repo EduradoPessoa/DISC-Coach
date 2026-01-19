@@ -3,14 +3,15 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Substitua estas configurações pelas do seu projeto no console.firebase.google.com
+// Configuração oficial do projeto disccoach-2055d
 const firebaseConfig = {
-  apiKey: "AIzaSy...", 
-  authDomain: "seu-projeto.firebaseapp.com",
-  projectId: "seu-projeto",
-  storageBucket: "seu-projeto.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
+  apiKey: "AIzaSyAiqsI80bZv8-DEi9JqHizsebhfqk6YBQ0",
+  authDomain: "disccoach-2055d.firebaseapp.com",
+  projectId: "disccoach-2055d",
+  storageBucket: "disccoach-2055d.firebasestorage.app",
+  messagingSenderId: "374796567231",
+  appId: "1:374796567231:web:b08fe221fb5baca1757c0a",
+  measurementId: "G-ZJS4PB4P40"
 };
 
 const app = initializeApp(firebaseConfig);
