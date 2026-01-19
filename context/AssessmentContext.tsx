@@ -1,6 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { DiscScore, AssessmentResult, FocusArea } from '../types';
 import { QUESTIONS } from '../data/questions';
+// Fix: Import useUser to associate results with the current user
+import { useUser } from './UserContext';
 
 interface Answers {
   [questionId: number]: number;
@@ -27,6 +30,8 @@ interface AssessmentContextType {
 const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
 
 export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Fix: Access current user to retrieve user.id
+  const { user } = useUser();
   const [answers, setAnswers] = useState<Answers>(() => {
     const saved = localStorage.getItem('disc_current_answers');
     return saved ? JSON.parse(saved) : {};
@@ -110,6 +115,8 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     const finalScores = calculateScores();
     const newResult: AssessmentResult = {
       id: `res_${Date.now()}`,
+      // Fix: Added missing userId property required by AssessmentResult type
+      userId: user.id,
       timestamp: Date.now(),
       scores: finalScores
     };
@@ -118,7 +125,7 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     setIsComplete(true);
     setAnswers({}); 
     return newResult;
-  }, [calculateScores]);
+  }, [calculateScores, user.id]);
 
   const saveAnalysisToResult = useCallback((resultId: string, analysis: any) => {
     setHistory(prev => {

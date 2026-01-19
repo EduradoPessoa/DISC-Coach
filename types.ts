@@ -1,13 +1,17 @@
+
+export type UserRole = 'saas-admin' | 'team-admin' | 'user';
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   position: string;
   department: string;
   avatar?: string;
   plan: 'free' | 'pro';
   subscriptionStatus?: 'active' | 'past_due' | 'canceled' | null;
+  invitedBy?: string; // ID do Team Admin que convidou
 }
 
 export interface Question {
@@ -38,6 +42,7 @@ export interface FocusArea {
 
 export interface AssessmentResult {
   id: string;
+  userId: string;
   timestamp: number;
   scores: DiscScore;
   analysis?: {
@@ -48,30 +53,37 @@ export interface AssessmentResult {
   };
 }
 
-export interface ChartDataPoint {
-  subject: string;
-  score: number;
-  color: string;
+export interface FinanceRecord {
+  id: string;
+  date: string;
+  amount: number;
+  status: 'received_stripe' | 'payout_done' | 'pending';
+  customerName: string;
+  type: 'subscription' | 'manual';
 }
 
-export enum LayoutType {
-  Centered = 'centered',
-  Auth = 'auth',
-  App = 'app',
-  Admin = 'admin'
+export interface Coupon {
+  code: string;
+  discountPercentage: number;
+  status: 'active' | 'expired';
+  usedCount: number;
 }
 
+export interface Affiliate {
+  id: string;
+  name: string;
+  email: string;
+  totalSales: number;
+  commissionEarned: number;
+}
+
+// Fix: Added missing types Language, NotificationType and AppNotification
 export type Language = 'en' | 'pt' | 'es';
 
-export type NotificationType = 'success' | 'error' | 'info' | 'warning';
+export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
 export interface AppNotification {
   id: string;
   type: NotificationType;
   message: string;
-}
-
-export interface Coupon {
-  code: string;
-  discountPercentage: number; // 5 to 100
 }
