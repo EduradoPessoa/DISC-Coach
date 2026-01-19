@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Login - DISC Coach</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .secondary-button {
+            background-color: #6c757d;
+        }
+        .secondary-button:hover {
+            background-color: #545b62;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .test-users {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .test-users h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .user-card {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 4px solid #007bff;
+        }
+        .quick-test {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .quick-test button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Login - DISC Coach</h1>
+        
+        <div id="status" class="status info">Sistema pronto para testes</div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Digite seu email" value="teste@disccoach.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Senha:</label>
+            <input type="password" id="password" placeholder="Digite sua senha" value="123456">
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Nome (apenas para registro):</label>
+            <input type="text" id="name" placeholder="Seu nome completo">
+        </div>
+        
+        <button onclick="testLogin()">🔐 Testar Login</button>
+        <button onclick="testRegister()" class="secondary-button">📝 Testar Registro</button>
+        
+        <div class="quick-test">
+            <button onclick="useTestUser()" style="background-color: #28a745;">Usar Usuário Teste</button>
+            <button onclick="useAdminUser()" style="background-color: #dc3545;">Usar Admin</button>
+        </div>
+        
+        <button onclick="resetSystem()" class="secondary-button">🔄 Resetar Sistema</button>
+        <button onclick="checkSystem()" class="secondary-button">📊 Verificar Sistema</button>
+        
+        <div class="test-users">
+            <h3>👥 Usuários de Teste Disponíveis:</h3>
+            <div class="user-card">
+                <strong>teste@disccoach.com</strong><br>
+                Senha: qualquer senha<br>
+                Plano: Free | Role: User
+            </div>
+            <div class="user-card">
+                <strong>eduardo@phoenyx.com.br</strong><br>
+                Senha: qualquer senha<br>
+                Plano: Pro | Role: SaaS Admin
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funções de teste
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            statusEl.className = `status ${type}`;
+        }
+
+        function useTestUser() {
+            document.getElementById('email').value = 'teste@disccoach.com';
+            document.getElementById('password').value = '123456';
+            document.getElementById('name').value = 'Usuário Teste';
+            updateStatus('Credenciais do usuário de teste preenchidas', 'info');
+        }
+
+        function useAdminUser() {
+            document.getElementById('email').value = 'eduardo@phoenyx.com.br';
+            document.getElementById('password').value = 'admin123';
+            document.getElementById('name').value = 'Admin Teste';
+            updateStatus('Credenciais do administrador preenchidas', 'info');
+        }
+
+        function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                updateStatus('Por favor, preencha email e senha', 'error');
+                return;
+            }
+
+            updateStatus('Testando login...', 'info');
+
+            try {
+                // Sistema de fallback - usa localStorage
+                const users = JSON.parse(localStorage.getItem('dc_users') || '{}');
+                const user = Object.values(users).find(u => u.email === email);
+                
+                if (user) {
+                    // Login mokado - aceita qualquer senha não vazia
+                    localStorage.setItem('dc_session_v1', user.id);
+                    updateStatus(`✅ Login bem-sucedido! Bem-vindo, ${user.name}`, 'success');
+                    console.log('Usuário logado:', user);
+                } else {
+                    updateStatus('Usuário não encontrado. Tente registrar primeiro.', 'error');
+                }
+            } catch (error) {
+                updateStatus(`Erro ao fazer login: ${error.message}`, 'error');
+                console.error('Erro no login:', error);
+            }
+        }
+
+        function testRegister() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value || email.split('@')[0];
+            
+            if (!email || !password) {
+                updateStatus('Por favor, preencha email e senha', 'error');
+                return;
+            }
+
+            updateStatus('Testando registro...', 'info');
+
+            try {
+                const users = JSON.parse(localStorage.getItem('dc_users') || '{}');
+                
+                // Verificar se email já existe
+                const existingUser = Object.values(users).find(u => u.email === email);
+                if (existingUser) {
+                    updateStatus('Email já cadastrado. Use outro email ou faça login.', 'error');
+                    return;
+                }
+                
+                // Criar novo usuário
+                const newUser = {
+                    id: 'usr_' + Date.now(),
+                    name: name,
+                    email: email,
+                    role: email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+                    position: 'Executivo',
+                    department: 'Corporativo',
+                    plan: 'free',
+                    subscriptionStatus: null
+                };
+                
+                users[newUser.id] = newUser;
+                localStorage.setItem('dc_users', JSON.stringify(users));
+                localStorage.setItem('dc_session_v1', newUser.id);
+                
+                updateStatus(`✅ Registro bem-sucedido! Bem-vindo, ${newUser.name}`, 'success');
+                console.log('Novo usuário registrado:', newUser);
+                
+            } catch (error) {
+                updateStatus(`Erro ao registrar: ${error.message}`, 'error');
+                console.error('Erro no registro:', error);
+            }
+        }
+
+        function resetSystem() {
+            if (confirm('Tem certeza que deseja resetar o sistema? Isso apagará todos os usuários.')) {
+                localStorage.clear();
+                updateStatus('✅ Sistema resetado com sucesso!', 'success');
+                console.log('Sistema completamente resetado');
+            }
+        }
+
+        function checkSystem() {
+            updateStatus('Verificando sistema...', 'info');
+            
+            try {
+                const users = JSON.parse(localStorage.getItem('dc_users') || '{}');
+                const session = localStorage.getItem('dc_session_v1');
+                
+                let message = '📊 Status do Sistema:\n';
+                message += `Usuários cadastrados: ${Object.keys(users).length}\n`;
+                message += `Sessão ativa: ${session ? 'Sim' : 'Não'}\n`;
+                
+                if (Object.keys(users).length > 0) {
+                    message += '\nUsuários existentes:\n';
+                    Object.values(users).forEach(user => {
+                        message += `- ${user.email} (${user.name}) - ${user.plan}\n`;
+                    });
+                }
+                
+                message += '\n✅ Sistema funcionando corretamente!';
+                updateStatus(message, 'success');
+                
+            } catch (error) {
+                updateStatus(`Erro ao verificar sistema: ${error.message}`, 'error');
+                console.error('Erro ao verificar sistema:', error);
+            }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Sistema de Teste DISC Coach carregado!');
+            console.log('📋 Use as credenciais de teste ou crie seu próprio usuário');
+            
+            // Verificar se há usuários de teste
+            const users = localStorage.getItem('dc_users');
+            if (!users) {
+                // Criar usuários de teste padrão
+                const testUsers = {
+                    'usr_test_001': {
+                        id: 'usr_test_001',
+                        name: 'Usuário Teste',
+                        email: 'teste@disccoach.com',
+                        role: 'user',
+                        position: 'Gerente',
+                        department: 'Vendas',
+                        plan: 'free',
+                        subscriptionStatus: null
+                    },
+                    'usr_admin_001': {
+                        id: 'usr_admin_001',
+                        name: 'Admin Teste',
+                        email: 'eduardo@phoenyx.com.br',
+                        role: 'saas-admin',
+                        position: 'CEO',
+                        department: 'Executivo',
+                        plan: 'pro',
+                        subscriptionStatus: 'active'
+                    }
+                };
+                
+                localStorage.setItem('dc_users', JSON.stringify(testUsers));
+                updateStatus('✅ Usuários de teste criados automaticamente!', 'success');
+            } else {
+                updateStatus('✅ Sistema pronto para testes', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
-import { UserProvider, useUser } from './context/UserContext';
+import { UserProvider, useUser } from './context/UserContextSupabase';
 import { LanguageProvider } from './context/LanguageContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { AssessmentProvider } from './context/AssessmentContext';

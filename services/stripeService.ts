@@ -5,8 +5,8 @@
 
 export const STRIPE_CONFIG = {
   // Use sua Publishable Key do Dashboard do Stripe
-  publishableKey: 'pk_test_6p36nNoQG2mCWp6Z59DxSjWv', 
-  isMock: false
+  publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_6p36nNoQG2mCWp6Z59DxSjWv', 
+  isMock: true // Modo mokado para desenvolvimento
 };
 
 // Singleton para o Stripe Instance
@@ -29,33 +29,39 @@ interface StripeSessionResponse {
 /**
  * Inicia o fluxo de pagamento do Stripe Checkout (Hosted).
  * Implementação Frontend profissional: o ID da sessão deve vir do seu backend.
+ * Versão mokada para desenvolvimento - simula pagamento bem-sucedido
  */
 export const createStripeCheckoutSession = async (amount: number, userEmail: string): Promise<StripeSessionResponse> => {
-  console.log(`[Stripe] Iniciando checkout seguro para ${userEmail}`);
+  console.log(`[Stripe Mock] Iniciando checkout para ${userEmail} - Valor: R$ ${amount}`);
   
   try {
-    const stripe = getStripe();
-    if (!stripe) {
-      throw new Error("Stripe SDK não carregado. Verifique se o script js.stripe.com/v3/ está no seu index.html.");
+    if (!STRIPE_CONFIG.isMock) {
+      const stripe = getStripe();
+      if (!stripe) {
+        throw new Error("Stripe SDK não carregado. Verifique se o script js.stripe.com/v3/ está no seu index.html.");
+      }
     }
 
-    // SIMULAÇÃO DE CHAMADA AO BACKEND (Ponto de Integração com KMS)
-    // Em produção: 
-    // const response = await fetch('https://api.seubackend.com/v1/stripe/checkout', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ amount, email: userEmail })
-    // });
-    // const { sessionId } = await response.json();
+    // Simula processamento de pagamento
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Simula sucesso do pagamento (90% de chance)
+    const success = Math.random() > 0.1;
     
-    // Para esta demonstração frontend-only, simulamos o redirecionamento.
-    // await stripe.redirectToCheckout({ sessionId });
+    if (success) {
+      console.log(`[Stripe Mock] Pagamento simulado com sucesso para ${userEmail}`);
+      return {
+        success: true,
+        url: `#/checkout/success?session_id=mock_stripe_${Date.now()}&email=${encodeURIComponent(userEmail)}`
+      };
+    } else {
+      console.log(`[Stripe Mock] Pagamento simulado falhou para ${userEmail}`);
+      return {
+        success: false,
+        error: "Pagamento recusado. Tente outro método de pagamento."
+      };
+    }
     
-    return {
-      success: true,
-      url: `#/checkout/success?session_id=mock_stripe_safe_${Date.now()}`
-    };
   } catch (err: any) {
     console.error("Stripe Checkout Error:", err);
     return {
@@ -73,7 +79,9 @@ export const validatePromoCode = async (code: string): Promise<{ valid: boolean;
     'LEVELC100': 100,
     'STRIPE20': 20,
     'EXECUTIVE': 50,
-    'VIP2024': 15
+    'VIP2024': 15,
+    'DISC2024': 25,
+    'COACH50': 50
   };
 
   await new Promise(resolve => setTimeout(resolve, 400));
@@ -84,4 +92,52 @@ export const validatePromoCode = async (code: string): Promise<{ valid: boolean;
   }
   
   return { valid: false, discount: 0 };
+};
+
+/**
+ * Simula o processamento de um pagamento com cartão de crédito
+ * Usado para testes e desenvolvimento
+ */
+export const processMockPayment = async (paymentData: {
+  cardNumber: string;
+  expiryDate: string;
+  cvv: string;
+  amount: number;
+  email: string;
+}): Promise<{
+  success: boolean;
+  transactionId?: string;
+  error?: string;
+}> => {
+  console.log(`[Stripe Mock] Processando pagamento mokado para ${paymentData.email}`);
+  
+  // Validações básicas
+  if (!paymentData.cardNumber || paymentData.cardNumber.length < 16) {
+    return { success: false, error: "Número do cartão inválido" };
+  }
+  
+  if (!paymentData.cvv || paymentData.cvv.length < 3) {
+    return { success: false, error: "CVV inválido" };
+  }
+  
+  // Simula processamento
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // Simula sucesso (85% de chance)
+  const success = Math.random() > 0.15;
+  
+  if (success) {
+    const transactionId = `mock_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[Stripe Mock] Pagamento aprovado - Transação: ${transactionId}`);
+    return {
+      success: true,
+      transactionId
+    };
+  } else {
+    console.log(`[Stripe Mock] Pagamento recusado`);
+    return {
+      success: false,
+      error: "Cartão recusado. Tente outro cartão ou método de pagamento."
+    };
+  }
 };

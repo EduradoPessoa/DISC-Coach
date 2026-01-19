@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { DiscScore, AssessmentResult, FocusArea } from '../types';
 import { QUESTIONS } from '../data/questions';
-import { useUser } from './UserContext';
+import { useUser } from './UserContextSupabase';
 import { calculateDiscScores } from '../utils/discCalculator';
 import { api } from '../services/api';
 

@@ -1,4 +1,3 @@
-
 export type UserRole = 'saas-admin' | 'team-admin' | 'user';
 
 export interface User {
@@ -23,6 +22,7 @@ export interface Invitation {
   used: boolean;
   invitedBy: string;
   createdAt: number;
+  usedAt?: number;
 }
 
 export interface Question {
@@ -49,6 +49,8 @@ export interface FocusArea {
   category: 'D' | 'I' | 'S' | 'C' | 'Leadership';
   status: 'planned' | 'in_progress' | 'completed';
   dueDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AssessmentResult {

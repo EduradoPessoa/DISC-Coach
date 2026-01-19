@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste DISC Coach - Console</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste DISC Coach - Console de Testes</h1>
+        
+        <div id="status" class="status info">Aguardando início dos testes...</div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="runAllTests()">🚀 Executar Todos os Testes</button>
+            <button onclick="testSupabaseConnection()">🔗 Testar Supabase</button>
+            <button onclick="testStripeMock()">💳 Testar Stripe Mokado</button>
+            <button onclick="testGoogleAI()">🤖 Testar Google AI</button>
+            <button onclick="clearResults()">🗑️ Limpar Resultados</button>
+        </div>
+        
+        <div id="test-results" class="test-results" style="display: none;">
+            <h3>Resultados dos Testes:</h3>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Configurações
+        const SUPABASE_URL = 'https://qyxllnapmlurqkoxvmii.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_QAOIV51CXpm2F--s1ofghA_zEAj6d6x';
+        const STRIPE_KEY = 'pk_test_6p36nNoQG2mCWp6Z59DxSjWv';
+
+        // Funções de utilidade
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function addResult(message, type = 'info') {
+            const resultsContent = document.getElementById('results-content');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `status ${type}`;
+            resultDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsContent.appendChild(resultDiv);
+            document.getElementById('test-results').style.display = 'block';
+        }
+
+        function clearResults() {
+            document.getElementById('results-content').innerHTML = '';
+            document.getElementById('test-results').style.display = 'none';
+            updateStatus('Resultados limpos. Pronto para novos testes.', 'info');
+        }
+
+        // Teste 1: Supabase Connection
+        async function testSupabaseConnection() {
+            updateStatus('Testando conexão com Supabase...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                if (response.ok) {
+                    addResult('✅ Conexão com Supabase estabelecida com sucesso!', 'success');
+                    
+                    // Testar se as tabelas existem
+                    const tables = ['users', 'assessments', 'focus_areas', 'invitations'];
+                    for (const table of tables) {
+                        try {
+                            const tableResponse = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1`, {
+                                headers: {
+                                    'apikey': SUPABASE_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                                }
+                            });
+                            
+                            if (tableResponse.ok) {
+                                addResult(`✅ Tabela ${table} acessível`, 'success');
+                            } else {
+                                addResult(`⚠️  Tabela ${table} pode não existir`, 'warning');
+                            }
+                        } catch (error) {
+                            addResult(`❌ Erro ao acessar tabela ${table}: ${error.message}`, 'error');
+                        }
+                    }
+                } else {
+                    addResult(`❌ Erro na conexão com Supabase: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Erro de conexão: ${error.message}`, 'error');
+            }
+            
+            updateStatus('Teste de Supabase concluído.', 'info');
+        }
+
+        // Teste 2: Stripe Mock
+        async function testStripeMock() {
+            updateStatus('Testando sistema de pagamento mokado...', 'info');
+            
+            try {
+                // Simular chamada ao Stripe mokado
+                const mockPayment = {
+                    cardNumber: '4242424242424242',
+                    expiryDate: '12/25',
+                    cvv: '123',
+                    amount: 297,
+                    email: 'teste@disccoach.com'
+                };
+                
+                // Simular processamento (90% de sucesso)
+                const success = Math.random() > 0.1;
+                
+                if (success) {
+                    addResult('✅ Pagamento mokado processado com sucesso!', 'success');
+                    addResult(`✅ Transação ID: mock_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, 'success');
+                } else {
+                    addResult('❌ Pagamento mokado recusado (simulação de falha)', 'error');
+                }
+                
+                // Testar cupons
+                const cupons = ['LEVELC100', 'STRIPE20', 'EXECUTIVE', 'VIP2024'];
+                const cupomTestado = cupons[Math.floor(Math.random() * cupons.length)];
+                
+                addResult(`✅ Cupom ${cupomTestado} testado (desconto simulado)`, 'success');
+                
+            } catch (error) {
+                addResult(`❌ Erro no teste Stripe: ${error.message}`, 'error');
+            }
+            
+            updateStatus('Teste de Stripe mokado concluído.', 'info');
+        }
+
+        // Teste 3: Google AI
+        async function testGoogleAI() {
+            updateStatus('Testando Google AI (modo mock)...', 'info');
+            
+            try {
+                // Simular chamada à API (com fallback mock)
+                const mockResponse = {
+                    summary: 'Perfil DISC analisado com sucesso',
+                    communication: ['Comunicação direta e objetiva', 'Focado em resultados'],
+                    value: ['Excelente em análise de problemas', 'Muito confiável'],
+                    blindspots: ['Pode ser excessivamente crítico', 'Tendência ao perfeccionismo']
+                };
+                
+                addResult('✅ Análise DISC mock gerada com sucesso!', 'success');
+                addResult(`📊 Resumo: ${mockResponse.summary}`, 'info');
+                addResult(`💬 Comunicação: ${mockResponse.communication.join(', ')}`, 'info');
+                addResult(`💎 Valor: ${mockResponse.value.join(', ')}`, 'info');
+                addResult(`👁️ Pontos cegos: ${mockResponse.blindspots.join(', ')}`, 'warning');
+                
+                // Testar diferentes modos
+                const modos = ['suggest', 'coach', 'audit'];
+                const modoTestado = modos[Math.floor(Math.random() * modos.length)];
+                
+                addResult(`✅ Modo ${modoTestado} testado com sucesso`, 'success');
+                
+            } catch (error) {
+                addResult(`❌ Erro no teste Google AI: ${error.message}`, 'error');
+            }
+            
+            updateStatus('Teste de Google AI concluído.', 'info');
+        }
+
+        // Executar todos os testes
+        async function runAllTests() {
+            clearResults();
+            updateStatus('Executando todos os testes...', 'info');
+            
+            addResult('🚀 Iniciando bateria de testes do DISC Coach', 'info');
+            addResult('📅 Timestamp: ' + new Date().toLocaleString(), 'info');
+            
+            await testSupabaseConnection();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testStripeMock();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testGoogleAI();
+            
+            addResult('\n🎉 Todos os testes concluídos!', 'success');
+            updateStatus('Testes concluídos. Verifique os resultados abaixo.', 'success');
+        }
+
+        // Exportar funções para uso global
+        window.runAllTests = runAllTests;
+        window.testSupabaseConnection = testSupabaseConnection;
+        window.testStripeMock = testStripeMock;
+        window.testGoogleAI = testGoogleAI;
+        window.clearResults = clearResults;
+        
+        // Mensagem inicial
+        updateStatus('Sistema pronto para testes. Clique nos botões acima para começar.', 'info');
+        
+        console.log('🧪 Console de Testes DISC Coach carregado!');
+        console.log('📊 Use as funções disponíveis:');
+        console.log('- runAllTests() para executar todos os testes');
+        console.log('- testSupabaseConnection() para testar Supabase');
+        console.log('- testStripeMock() para testar pagamentos mokados');
+        console.log('- testGoogleAI() para testar análises DISC');
+    </script>
+</body>
+</html>

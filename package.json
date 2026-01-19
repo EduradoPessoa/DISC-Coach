@@ -1,4 +1,3 @@
-
 {
   "name": "disc-coach-level-c",
   "private": true,
@@ -8,10 +7,14 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port $PORT"
+    "start": "vite preview --host 0.0.0.0 --port $PORT",
+    "vercel-build": "chmod +x build.sh && ./build.sh",
+    "deploy": "vercel --prod"
   },
   "dependencies": {
     "@google/genai": "^1.32.0",
+    "@supabase/auth-helpers-react": "^0.15.0",
+    "@supabase/supabase-js": "^2.90.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.474.0",
@@ -30,6 +33,7 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.7.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vercel": "^32.0.0"
   }
 }
