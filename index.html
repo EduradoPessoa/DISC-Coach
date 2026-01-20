@@ -6,22 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DISC Coach (Level C)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://js.stripe.com/v3/"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              stripe: '#635bff',
-            }
-          },
-        },
-      }
-    </script>
+    <!-- Stripe JS (Production Only - Uncomment when deploying) -->
+    <!-- <script src="https://js.stripe.com/v3/"></script> -->
     <style type="text/css">
       body {
         font-family: 'Inter', sans-serif;
@@ -70,7 +56,6 @@
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "react-router-dom": "https://esm.sh/react-router-dom@7.1.5?deps=react@19.0.0,react-dom@19.0.0",
-    "@google/genai": "https://esm.sh/@google/genai@1.32.0",
     "lucide-react": "https://esm.sh/lucide-react@0.474.0?deps=react@19.0.0",
     "recharts": "https://esm.sh/recharts@2.15.0?deps=react@19.0.0,react-dom@19.0.0",
     "jspdf": "https://esm.sh/jspdf@2.5.1",

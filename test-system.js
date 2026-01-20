@@ -5,8 +5,8 @@ export const testSupabaseConnection = async () => {
   console.log('� Testando conexão com Supabase...')
   
   try {
-    const SUPABASE_URL = 'https://qyxllnapmlurqkoxvmii.supabase.co'
-    const SUPABASE_KEY = 'sb_publishable_QAOIV51CXpm2F--s1ofghA_zEAj6d6x'
+    const SUPABASE_URL = 'https://tpancojploqdfddxvgre.supabase.co'
+    const SUPABASE_KEY = 'sb_publishable_73NI4K2_RwneSniHlB4cmw_WLzeUYh4'
     
     const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*&limit=1`, {
       headers: {

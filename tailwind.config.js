@@ -2,13 +2,20 @@
 export default {
   content: [
     "./index.html",
-    "./**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./views/**/*.{js,ts,jsx,tsx}",
+    "./context/**/*.{js,ts,jsx,tsx}",
+    "./*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+      colors: {
+        stripe: '#635bff',
+      }
     },
   },
   plugins: [],

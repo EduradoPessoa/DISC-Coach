@@ -4,7 +4,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../context/UserContextSupabase';
 import { useNotification } from '../../context/NotificationContext';
 import { api } from '../../services/api';
 import { Loader2, ArrowLeft, AlertCircle, Ticket } from 'lucide-react';
@@ -72,18 +72,21 @@ const Onboarding = () => {
 
       // Se houver convite, aplicamos as permissões especiais no banco
       if (inviteData && inviteToken) {
-        const currentUser = await api.getUserByEmail(formData.email);
-        if (currentUser) {
-          await api.saveUser({
-            ...currentUser,
+        // Usa updateUser do context (que chama supabaseApi.updateUser)
+        // Isso evita problemas de RLS com upsert
+        await updateUser({
             plan: 'pro',
-            role: 'team-admin',
+            role: inviteData.role || 'user',
             subscriptionStatus: 'active',
             invitedBy: inviteData.invitedBy
-          });
-          await api.markInvitationAsUsed(inviteToken);
-          addNotification('success', 'Acesso Pro ativado via convite!');
-        }
+        });
+        
+        // Marca convite como usado (aqui ainda usamos api local se não tiver sido migrada, 
+        // mas idealmente deveria ser supabaseApi também se implementarmos lá)
+        // Vamos tentar usar supabaseApi para convite se possível, ou manter api local por enquanto
+        // para não quebrar validação
+        await supabaseApi.markInvitationAsUsed(inviteToken);
+        addNotification('success', 'Acesso Pro ativado via convite!');
       }
 
       addNotification('success', 'Conta criada com sucesso! Bem-vindo ao DISC Coach.');

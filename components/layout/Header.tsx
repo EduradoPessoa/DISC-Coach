@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, User, Menu, Globe, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../context/UserContextSupabase';
 import { useLanguage } from '../../context/LanguageContext';
 import { Language } from '../../types';
 

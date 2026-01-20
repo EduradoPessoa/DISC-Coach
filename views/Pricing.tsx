@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../context/UserContextSupabase';
 
 const Pricing = () => {
   const navigate = useNavigate();

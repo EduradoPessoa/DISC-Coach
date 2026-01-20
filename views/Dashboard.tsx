@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useAssessment } from '../context/AssessmentContext';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../context/UserContextSupabase';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { Clock, CheckCircle, FileText, ChevronRight, Award } from 'lucide-react';
 

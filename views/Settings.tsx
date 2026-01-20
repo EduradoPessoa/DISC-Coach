@@ -3,7 +3,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { User as UserIcon, Shield, Lock, Upload } from 'lucide-react';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../context/UserContextSupabase';
 import { useNotification } from '../context/NotificationContext';
 import { useLanguage } from '../context/LanguageContext';
 

@@ -31,7 +31,7 @@ interface AssessmentContextType {
 
 const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
 
-export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export function AssessmentProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useUser();
   
   const [answers, setAnswers] = useState<Answers>({});
@@ -171,12 +171,12 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       {children}
     </AssessmentContext.Provider>
   );
-};
+}
 
-export const useAssessment = () => {
+export function useAssessment() {
   const context = useContext(AssessmentContext);
   if (context === undefined) {
     throw new Error('useAssessment must be used within an AssessmentProvider');
   }
   return context;
-};
+}

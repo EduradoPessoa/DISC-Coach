@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { Button } from './Button';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../context/UserContextSupabase';
 
 interface PremiumGateProps {
   children: React.ReactNode;
@@ -18,7 +18,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({
   const { user } = useUser();
   const navigate = useNavigate();
 
-  if (user.plan === 'pro') {
+  if (user.plan === 'pro' || user.invitedBy) {
     return <>{children}</>;
   }
 

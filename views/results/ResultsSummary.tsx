@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useLanguage } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useAssessment } from '../../context/AssessmentContext';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../context/UserContextSupabase';
 import { generateFullDiscReport } from '../../services/geminiService';
 import { Download, Loader2, Sparkles, AlertCircle, History } from 'lucide-react';
 import html2canvas from 'html2canvas';

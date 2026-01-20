@@ -27,9 +27,9 @@ Modo: Mokado (90% taxa de sucesso)
 - ✅ Cupons de desconto
 - ✅ Upgrade para plano Pro
 
-#### 3. **Google AI** (Análises DISC)
+#### 3. **Groq Cloud AI** (Análises DISC)
 ```
-API: Gemini 3 Pro
+API: Llama 3 70B (via Groq)
 Fallback: Respostas mockadas
 ```
 - ✅ Análises inteligentes de perfil DISC

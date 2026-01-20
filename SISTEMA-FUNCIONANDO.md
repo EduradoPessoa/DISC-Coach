@@ -27,14 +27,15 @@ Modo: Mokado (90% taxa de sucesso)
 - ✅ Cupons de desconto funcionando
 - ✅ Upgrade automático para plano Pro
 
-### 3. **Google AI** (Análises DISC)
+### 3. **Groq Cloud AI** (Análises DISC)
 ```
-API: Gemini 3 Pro
+API: Llama 3 70B (via Groq)
 Fallback: Respostas mockadas automáticas
 ```
 - ✅ Análises inteligentes de perfil DISC
 - ✅ Fallback automático quando API não configurada
 - ✅ Suporte 3 idiomas (PT/EN/ES)
+- ✅ Migrado de Google Gemini para Groq Cloud (19/01/2026)
 
 ## 🧪 Como Testar o Sistema
 

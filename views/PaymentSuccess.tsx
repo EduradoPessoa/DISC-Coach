@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../context/UserContextSupabase';
 import { useNotification } from '../context/NotificationContext';
 
 const PaymentSuccess = () => {

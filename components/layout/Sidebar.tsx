@@ -13,7 +13,7 @@ import {
   LogOut,
   UserPlus
 } from 'lucide-react';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../context/UserContextSupabase';
 
 interface SidebarProps {
   isOpen: boolean;

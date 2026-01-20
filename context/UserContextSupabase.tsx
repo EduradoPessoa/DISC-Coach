@@ -35,86 +35,146 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       try {
         console.log('🔍 Verificando autenticação...');
         
-        // Primeiro tenta verificar se há sessão do Supabase
-        if (supabase && supabase.auth) {
-          try {
-            const { data: { session } } = await supabase.auth.getSession()
-            
-            if (session?.user) {
-              console.log('✅ Sessão do Supabase encontrada:', session.user.email);
-              
-              // Busca dados do usuário no nosso banco
-              const userData = await supabaseApi.getUser(session.user.id)
-              if (userData) {
-                setUser(userData);
-                setIsAuthenticated(true);
-                console.log('✅ Usuário carregado do banco:', userData.name);
-              } else {
-                // Cria usuário no nosso banco se não existir
-                console.log('📝 Criando novo usuário no banco...');
-                const newUser: User = {
-                  id: session.user.id,
-                  email: session.user.email!,
-                  name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
-                  role: session.user.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
-                  position: 'Executivo',
-                  department: 'Corporativo',
-                  plan: 'free'
-                }
-                await supabaseApi.saveUser(newUser);
-                setUser(newUser);
-                setIsAuthenticated(true);
-                console.log('✅ Novo usuário criado:', newUser.name);
-              }
-            } else {
-              console.log('ℹ️  Nenhuma sessão ativa encontrada');
-              // Verifica sessão antiga do localStorage para migração
-              const storedSession = localStorage.getItem(SESSION_KEY);
-              if (storedSession) {
-                console.log('🔄 Tentando migrar sessão antiga...');
-                const userData = await supabaseApi.getUser(storedSession);
-                if (userData) {
-                  // Faz login no Supabase
-                  console.log('🔄 Fazendo login no Supabase...');
-                  const { error } = await supabase.auth.signInWithPassword({
-                    email: userData.email,
-                    password: 'temp123' // Senha temporária para migração
-                  });
+        if (!navigator.onLine) {
+            console.log('⚠️ Sem conexão com internet, usando fallback');
+            fallbackToLocalStorage();
+            return;
+        }
+
+        const authCheckPromise = (async () => {
+            if (!mounted) return;
+
+            // Primeiro tenta verificar se há sessão do Supabase
+            if (supabase && supabase.auth) {
+              try {
+                // Adicionando um timeout específico para a chamada do Supabase
+                const sessionPromise = supabase.auth.getSession();
+                const sessionTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase getSession timeout')), 10000));
+                
+                const result: any = await Promise.race([sessionPromise, sessionTimeout]);
+                
+                const { data: { session }, error: sessionError } = result;
+                
+                if (sessionError) throw sessionError;
+
+                if (session?.user) {
+                  console.log('✅ Sessão do Supabase encontrada:', session.user.email);
                   
-                  if (!error) {
-                    setUser(userData);
-                    setIsAuthenticated(true);
-                    console.log('✅ Migração concluída');
+                  // Busca dados do usuário no nosso banco
+                  // Adicionando timeout para getUser também
+                  const getUserPromise = supabaseApi.getUser(session.user.id);
+                  const getUserTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('getUser timeout')), 8000));
+                  
+                  let userData;
+                  try {
+                    userData = await Promise.race([getUserPromise, getUserTimeout]);
+                  } catch (err) {
+                    console.warn('⚠️ getUser demorou demais ou falhou, tentando recuperar...', err);
+                  }
+                  
+                  if (userData) {
+                    if (mounted) {
+                        setUser(userData as User);
+                        setIsAuthenticated(true);
+                    }
+                    console.log('✅ Usuário carregado do banco:', (userData as User).name);
                   } else {
-                    console.log('❌ Erro na migração:', error);
+                    // Usuário existe no Auth mas não no Public (ou trigger falhou)
+                    console.log('📝 Configurando perfil do usuário...');
+                    
+                    const updates: Partial<User> = {
+                        name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+                        position: 'Executivo',
+                        department: 'Corporativo',
+                        plan: 'free'
+                    };
+
+                    try {
+                        // Tenta atualizar primeiro (assumindo que o trigger criou)
+                        await supabaseApi.updateUser(session.user.id, updates);
+                    } catch (err) {
+                        // Se falhar (ex: não existe), tenta salvar completo
+                        const newUser: User = {
+                            id: session.user.id,
+                            email: session.user.email!,
+                            role: session.user.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+                            ...updates
+                        } as User;
+                        await supabaseApi.saveUser(newUser);
+                    }
+                    
+                    // Recarrega para garantir
+                    const finalUser = await supabaseApi.getUser(session.user.id);
+                    if (mounted && finalUser) {
+                        setUser(finalUser);
+                        setIsAuthenticated(true);
+                    }
+                  }
+                } else {
+                  console.log('ℹ️  Nenhuma sessão ativa encontrada');
+                  // Verifica sessão antiga do localStorage para migração
+                  const storedSession = localStorage.getItem(SESSION_KEY);
+                  if (storedSession) {
+                    console.log('🔄 Tentando migrar sessão antiga...');
+                    const userData = await supabaseApi.getUser(storedSession);
+                    if (userData) {
+                      // Faz login no Supabase
+                      console.log('🔄 Fazendo login no Supabase...');
+                      const { error } = await supabase.auth.signInWithPassword({
+                        email: userData.email,
+                        password: 'temp123' // Senha temporária para migração
+                      });
+                      
+                      if (!error && mounted) {
+                        setUser(userData);
+                        setIsAuthenticated(true);
+                        console.log('✅ Migração concluída');
+                      } else {
+                        console.log('❌ Erro na migração:', error);
+                      }
+                    }
+                    localStorage.removeItem(SESSION_KEY);
+                  } else {
+                      fallbackToLocalStorage();
                   }
                 }
-                localStorage.removeItem(SESSION_KEY);
+              } catch (authError) {
+                console.log('⚠️  Erro ao verificar sessão do Supabase:', authError);
+                fallbackToLocalStorage();
               }
+            } else {
+              console.log('⚠️  Supabase não configurado, usando fallback');
+              fallbackToLocalStorage();
             }
-          } catch (authError) {
-            console.log('⚠️  Erro ao verificar sessão do Supabase:', authError);
-            // Fallback para sistema antigo
-            fallbackToLocalStorage();
-          }
-        } else {
-          console.log('⚠️  Supabase não configurado, usando fallback');
-          fallbackToLocalStorage();
-        }
+        })();
+
+        // Timeout geral aumentado para 20s para dar chance às tentativas internas
+        const overallTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Global Auth Check Timeout')), 20000)
+        );
+
+        await Promise.race([authCheckPromise, overallTimeout]);
+
       } catch (error) {
         console.error('❌ Erro ao carregar sessão:', error);
+        // Mesmo com erro, garante que o loading pare
         fallbackToLocalStorage();
       } finally {
-        setIsLoading(false);
-        console.log('✅ Verificação de autenticação concluída');
+        if (mounted) {
+            setIsLoading(false);
+            console.log('✅ Verificação de autenticação concluída');
+        }
       }
     };
 
     const fallbackToLocalStorage = () => {
+      if (!mounted) return;
       const storedSession = localStorage.getItem(SESSION_KEY);
       if (storedSession) {
         console.log('📁 Usando sessão do localStorage');
@@ -141,21 +201,74 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔄 Evento de auth:', event);
         if (event === 'SIGNED_IN' && session?.user) {
-          const userData = await supabaseApi.getUser(session.user.id);
-          if (userData) {
-            setUser(userData);
-            setIsAuthenticated(true);
-            console.log('✅ Login detectado:', userData.name);
+          try {
+            // Timeout para buscar dados do usuário
+            const getUserPromise = supabaseApi.getUser(session.user.id);
+            const getUserTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('getUser timeout')), 8000));
+            
+            let userData;
+            try {
+              userData = await Promise.race([getUserPromise, getUserTimeout]);
+            } catch (err) {
+              console.warn('⚠️ (Listener) getUser demorou demais ou falhou:', err);
+            }
+
+            if (userData && mounted) {
+              setUser(userData as User);
+              setIsAuthenticated(true);
+              console.log('✅ Login detectado:', (userData as User).name);
+            } else if (mounted) {
+              // Tentativa de recuperação
+               console.log('📝 (Listener) Usuário não encontrado no banco, tentando recuperar...');
+               const updates: Partial<User> = {
+                  name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+                  position: 'Executivo',
+                  department: 'Corporativo',
+                  plan: 'free'
+               };
+               
+               try {
+                   await supabaseApi.updateUser(session.user.id, updates);
+                } catch (e) {
+                   console.error('❌ Erro ao tentar atualizar usuário na recuperação:', e);
+                   // Ignore update error, try save
+                   const newUser: User = {
+                    id: session.user.id,
+                    email: session.user.email!,
+                    role: session.user.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+                    ...updates
+                   } as User;
+                   
+                   try {
+                     await supabaseApi.saveUser(newUser);
+                     console.log('✅ Usuário salvo via saveUser (upsert)');
+                   } catch (saveError) {
+                     console.error('❌ Erro CRÍTICO ao tentar salvar usuário na recuperação:', saveError);
+                   }
+                }
+
+               const finalUser = await supabaseApi.getUser(session.user.id);
+               if (finalUser) {
+                 setUser(finalUser);
+                 setIsAuthenticated(true);
+                 console.log('✅ (Listener) Login recuperado com sucesso');
+               }
+            }
+          } catch (error) {
+            console.error('❌ Erro no listener de auth:', error);
           }
         } else if (event === 'SIGNED_OUT') {
-          setUser(defaultUser);
-          setIsAuthenticated(false);
-          console.log('✅ Logout detectado');
+          if (mounted) {
+            setUser(defaultUser);
+            setIsAuthenticated(false);
+            console.log('✅ Logout detectado');
+          }
         }
       });
 
       return () => {
         if (subscription) subscription.unsubscribe();
+        mounted = false;
       };
     }
   }, []);
@@ -182,7 +295,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setIsAuthenticated(true);
             console.log('✅ Login com Supabase bem-sucedido:', userData.name);
           } else {
-            throw new Error("Usuário não encontrado no banco de dados");
+            // Recuperação automática: Usuário existe no Auth mas não no Banco
+            console.log('⚠️ Usuário autenticado mas sem dados no banco. Criando perfil...');
+            
+            const newUser: User = {
+              id: data.user.id,
+              email: data.user.email!,
+              name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
+              role: data.user.email === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+              position: 'Executivo',
+              department: 'Corporativo',
+              plan: 'free'
+            };
+            
+            await supabaseApi.saveUser(newUser);
+            setUser(newUser);
+            setIsAuthenticated(true);
+            console.log('✅ Perfil recriado com sucesso:', newUser.name);
           }
         }
       } else {
@@ -234,17 +363,24 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (data.user) {
           // Cria usuário no nosso banco
-          const newUser: User = {
-            id: data.user.id,
-            name: profile.name || normalizedEmail.split('@')[0],
-            email: normalizedEmail,
-            role: normalizedEmail === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+          // O trigger handle_new_user já criou o registro básico.
+          // Aqui atualizamos os campos adicionais que o trigger não cobre.
+          const updates: Partial<User> = {
             position: profile.position || 'Executivo',
             department: profile.department || 'Corporativo',
             plan: 'free'
           };
           
-          await supabaseApi.saveUser(newUser);
+          await supabaseApi.updateUser(data.user.id, updates);
+          
+          const newUser: User = {
+            id: data.user.id,
+            name: profile.name || normalizedEmail.split('@')[0],
+            email: normalizedEmail,
+            role: normalizedEmail === 'eduardo@phoenyx.com.br' ? 'saas-admin' : 'user',
+            ...updates
+          } as User;
+
           setUser(newUser);
           setIsAuthenticated(true);
           console.log('✅ Registro com Supabase bem-sucedido:', newUser.name);

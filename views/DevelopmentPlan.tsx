@@ -31,7 +31,8 @@ const DevelopmentPlan = () => {
     }
     setIsLoadingSuggestions(true);
     try {
-      const data = await generateDevelopmentSuggestions(currentResult.scores, language);
+      const currentFocusTitles = focusAreas.map(area => area.title);
+      const data = await generateDevelopmentSuggestions(currentResult.scores, currentFocusTitles, language);
       setSuggestions(data || []);
     } catch (e) {
       console.error(e);
@@ -139,15 +140,15 @@ const DevelopmentPlan = () => {
       )}
 
       {planFeedback && (
-        <Card className="bg-indigo-900 text-white border-none shadow-2xl shadow-indigo-200 animate-in fade-in slide-in-from-top-4">
+        <Card className="!bg-indigo-50 !border-indigo-200 shadow-lg animate-in fade-in slide-in-from-top-4">
              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-indigo-300" />
-                <h3 className="font-black uppercase tracking-widest text-xs text-indigo-200">Feedback do Executive Coach IA</h3>
+                <Sparkles className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-black uppercase tracking-widest text-xs text-indigo-700">Feedback do Executive Coach IA</h3>
              </div>
-             <div className="prose prose-invert prose-sm max-w-none text-indigo-50 leading-relaxed">
+             <div className="prose prose-sm max-w-none text-indigo-900 leading-relaxed">
                 <p className="whitespace-pre-wrap">{planFeedback}</p>
              </div>
-             <Button label="Entendido" variant="ghost" className="mt-4 text-indigo-300 hover:bg-white/10" onClick={() => setPlanFeedback(null)} />
+             <Button label="Entendido" variant="ghost" className="mt-4 text-indigo-700 hover:bg-indigo-100" onClick={() => setPlanFeedback(null)} />
         </Card>
       )}
 

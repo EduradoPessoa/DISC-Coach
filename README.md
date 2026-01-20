@@ -15,7 +15,7 @@
 ### 📊 Assessment DISC
 - ✅ Questionário completo com 24 perguntas
 - ✅ Cálculo automático dos scores D, I, S, C
-- ✅ Análise inteligente com Google Gemini AI
+- ✅ Análise inteligente com Groq Cloud AI (Llama 3)
 - ✅ Relatórios detalhados em PDF
 - ✅ Histórico de assessments
 

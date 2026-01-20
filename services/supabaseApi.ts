@@ -14,7 +14,8 @@ export const supabaseApi = {
         position: user.position,
         department: user.department,
         plan: user.plan,
-        subscription_status: user.subscriptionStatus
+        subscription_status: user.subscriptionStatus,
+        invited_by: user.invitedBy
       })
     
     if (error) throw error
@@ -110,12 +111,89 @@ export const supabaseApi = {
   },
 
   async markInvitationAsUsed(token: string): Promise<void> {
-    const { error } = await supabase
-      .from('invitations')
-      .update({ used: true, used_at: new Date().toISOString() })
-      .eq('token', token)
+    const { error } = await supabase.rpc('redeem_invite', { invite_token: token });
     
     if (error) throw error
+  },
+
+  // --- ADMIN ---
+  async getAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return (data || []).map(d => ({
+      id: d.id,
+      email: d.email,
+      name: d.name,
+      role: d.role,
+      position: d.position,
+      department: d.department,
+      plan: d.plan,
+      subscriptionStatus: d.subscription_status,
+      createdAt: d.created_at,
+      invitedBy: d.invited_by
+    }))
+  },
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<void> {
+    const dbUpdates: any = {}
+    if (updates.email !== undefined) dbUpdates.email = updates.email
+    if (updates.name !== undefined) dbUpdates.name = updates.name
+    if (updates.role !== undefined) dbUpdates.role = updates.role
+    if (updates.position !== undefined) dbUpdates.position = updates.position
+    if (updates.department !== undefined) dbUpdates.department = updates.department
+    if (updates.plan !== undefined) dbUpdates.plan = updates.plan
+    if (updates.subscriptionStatus !== undefined) dbUpdates.subscription_status = updates.subscriptionStatus
+    if (updates.invitedBy !== undefined) dbUpdates.invited_by = updates.invitedBy
+
+    const { error } = await supabase
+      .from('users')
+      .update(dbUpdates)
+      .eq('id', userId)
+
+    if (error) throw error
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId)
+
+    if (error) throw error
+  },
+
+  async getTeamMembers(adminId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*, assessments(id, scores, analysis, created_at)')
+      .eq('invited_by', adminId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return (data || []).map(d => {
+      const latestAssessment = d.assessments?.[0]; // Assuming one or taking the first one
+      // If assessments is an array (which it is), we need to sort or pick the latest if not ordered.
+      // But usually Supabase returns array.
+      
+      return {
+        id: d.id,
+        email: d.email,
+        name: d.name,
+        role: d.role,
+        plan: d.plan,
+        status: latestAssessment ? 'Concluído' : 'Pendente',
+        profile: latestAssessment?.analysis?.profile || '-',
+        resultId: latestAssessment?.id,
+        invitedBy: d.invited_by,
+        createdAt: d.created_at
+      }
+    })
   },
 
   // --- ASSESSMENTS ---
@@ -169,20 +247,20 @@ export const supabaseApi = {
     
     if (deleteError) throw deleteError
     
-    // Insere novas áreas
-    if (areas.length > 0) {
-      const { error } = await supabase
-        .from('focus_areas')
-        .insert(areas.map(area => ({
-          user_id: userId,
-          title: area.title,
-          description: area.description,
-          category: area.category,
-          status: area.status
-        })))
-      
-      if (error) throw error
-    }
+    if (areas.length === 0) return
+
+    const { error } = await supabase
+      .from('focus_areas')
+      .insert(areas.map(area => ({
+        user_id: userId,
+        title: area.title,
+        description: area.description,
+        category: area.category,
+        status: area.status,
+        due_date: area.dueDate
+      })))
+
+    if (error) throw error
   },
 
   async getFocusAreas(userId: string): Promise<FocusArea[]> {
@@ -190,19 +268,39 @@ export const supabaseApi = {
       .from('focus_areas')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: true })
     
     if (error) throw error
     
-    return data.map(item => ({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      category: item.category,
-      status: item.status,
-      createdAt: new Date(item.created_at).toISOString(),
-      updatedAt: new Date(item.updated_at).toISOString()
+    return (data || []).map(area => ({
+      id: area.id,
+      title: area.title,
+      description: area.description,
+      category: area.category,
+      status: area.status,
+      dueDate: area.due_date
     }))
+  },
+
+  // --- NOTIFICATIONS ---
+  async getNotifications(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return data || []
+  },
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId)
+    
+    if (error) throw error
   },
   
   async updateFocusArea(userId: string, areaId: string, updates: any): Promise<void> {

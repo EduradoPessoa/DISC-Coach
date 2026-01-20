@@ -1,27 +1,39 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import Groq from "groq-sdk";
 
-// Use gemini-3-pro-preview for complex reasoning tasks like executive coaching
+// Initialize Groq client
+// Note: dangerouslyAllowBrowser is needed because we are calling from the client side.
+// Ideally, this should be done via a backend proxy to protect the API key.
+const getGroqClient = (apiKey: string) => new Groq({ 
+  apiKey,
+  dangerouslyAllowBrowser: true 
+});
+
+const MODEL = "llama-3.3-70b-versatile";
+
+/**
+ * Gera insights sobre o perfil DISC usando Groq Cloud
+ */
 export const generateDiscInsights = async (
   profile: string,
   context: string,
   mode: 'suggest' | 'coach' | 'audit',
   language: 'en' | 'pt' | 'es' = 'en'
 ): Promise<string> => {
-  const apiKey = import.meta.env.VITE_API_KEY || process.env.VITE_API_KEY;
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
   
   if (!apiKey) {
-    console.warn("Google AI API Key não configurada. Usando resposta mockada.");
+    console.warn("Groq API Key não configurada. Usando resposta mockada.");
     return getMockResponse(mode, language);
   }
   
-  const ai = new GoogleGenAI({ apiKey });
+  const groq = getGroqClient(apiKey);
   
   let systemInstruction = "Você é um Coach Executivo sênior especializado em avaliações DISC para profissionais de C-Level.";
   
   if (mode === 'audit') {
     systemInstruction += " Foco em governança, compliance de riscos e precisão técnica.";
   } else if (mode === 'coach') {
-    systemInstruction += " Foco em desenvolvimento de liderança e dinâmicas de equipe de alta performance.";
+    systemInstruction += " Foco em desenvolvimento de liderança. IMPORTANTE: Sua análise DEVE cobrir explicitamente os 4 fatores DISC (Dominância, Influência, Estabilidade e Conformidade), avaliando como o perfil do usuário impacta cada um deles no contexto das ações planejadas.";
   }
 
   const langMap = {
@@ -33,20 +45,18 @@ export const generateDiscInsights = async (
   systemInstruction += ` Responda em Markdown. Idioma: ${langMap[language]}.`;
 
   try {
-    // Fix: Using gemini-3-pro-preview for complex reasoning task (executive coaching)
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `Perfil DISC: ${profile}. Contexto: ${context}.`,
-      config: {
-        systemInstruction: systemInstruction,
-        temperature: 0.7,
-      }
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: `Perfil DISC: ${profile}. Contexto: ${context}.` }
+      ],
+      model: MODEL,
+      temperature: 0.7,
     });
     
-    // Access response.text property directly
-    return response.text || "";
+    return completion.choices[0]?.message?.content || "";
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Groq API Error:", error);
     return getMockResponse(mode, language);
   }
 };
@@ -55,17 +65,17 @@ function getMockResponse(mode: string, language: string): string {
   const responses = {
     pt: {
       suggest: "Com base no seu perfil DISC, sugiro focar em melhorar a comunicação assertiva e desenvolver habilidades de delegação efetiva.",
-      coach: "Como seu coach executivo, recomendo trabalhar na construção de relacionamentos mais fortes com sua equipe através de feedback regular e reconhecimento.",
+      coach: `**Análise do Coach Executivo:**\n\n*   **Dominância (D):** Seu foco em resultados é alto, mas certifique-se de ouvir sua equipe antes de decidir.\n*   **Influência (I):** Utilize seu carisma para engajar, mas mantenha o foco nos prazos.\n*   **Estabilidade (S):** Sua paciência é uma virtude, mas não evite conflitos necessários.\n*   **Conformidade (C):** Sua precisão é excelente, mas cuidado com o perfeccionismo que pode travar o progresso.`,
       audit: "Análise de governança: Seu perfil indica necessidade de maior atenção aos detalhes em processos críticos e documentação adequada."
     },
     en: {
       suggest: "Based on your DISC profile, I suggest focusing on improving assertive communication and developing effective delegation skills.",
-      coach: "As your executive coach, I recommend working on building stronger relationships with your team through regular feedback and recognition.",
+      coach: `**Executive Coach Analysis:**\n\n*   **Dominance (D):** Your focus on results is high, but ensure you listen to your team before deciding.\n*   **Influence (I):** Use your charisma to engage, but keep focus on deadlines.\n*   **Steadiness (S):** Your patience is a virtue, but do not avoid necessary conflicts.\n*   **Compliance (C):** Your precision is excellent, but beware of perfectionism stalling progress.`,
       audit: "Governance analysis: Your profile indicates a need for greater attention to detail in critical processes and proper documentation."
     },
     es: {
       suggest: "Basado en su perfil DISC, sugiero enfocarse en mejorar la comunicación asertiva y desarrollar habilidades de delegación efectiva.",
-      coach: "Como su coach ejecutivo, recomiendo trabajar en construir relaciones más fuertes con su equipo a través de retroalimentación regular y reconocimiento.",
+      coach: `**Análisis del Coach Ejecutivo:**\n\n*   **Dominancia (D):** Su enfoque en resultados es alto, pero asegúrese de escuchar a su equipo antes de decidir.\n*   **Influencia (I):** Utilice su carisma para involucrar, pero mantenga el enfoque en los plazos.\n*   **Estabilidad (S):** Su paciencia es una virtud, pero no evite conflictos necesarios.\n*   **Cumplimiento (C):** Su precisión es excelente, pero cuidado con el perfeccionismo que puede frenar el progreso.`,
       audit: "Análisis de gobernanza: Su perfil indica necesidad de mayor atención al detalle en procesos críticos y documentación adecuada."
     }
   };
@@ -73,57 +83,55 @@ function getMockResponse(mode: string, language: string): string {
   return responses[language as keyof typeof responses]?.[mode as keyof typeof responses.pt] || responses.en.suggest;
 }
 
+/**
+ * Gera sugestões de desenvolvimento usando Groq Cloud (JSON Mode)
+ */
 export const generateDevelopmentSuggestions = async (
   scores: { D: number, I: number, S: number, C: number },
+  currentFocusAreas: string[] = [],
   language: 'pt' | 'en' | 'es' = 'pt'
 ) => {
-  const apiKey = import.meta.env.VITE_API_KEY || process.env.VITE_API_KEY;
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
   
   if (!apiKey) {
-    console.warn("Google AI API Key não configurada. Usando sugestões mockadas.");
-    return getMockSuggestions(scores, language);
+    console.warn("Groq API Key não configurada. Usando sugestões mockadas.");
+    return getMockSuggestions(scores, language, currentFocusAreas);
   }
   
-  const ai = new GoogleGenAI({ apiKey });
+  const groq = getGroqClient(apiKey);
   
+  const existingAreasText = currentFocusAreas.length > 0 
+    ? `\nEVITE gerar sugestões que sejam similares às seguintes áreas de foco que o usuário já possui: ${currentFocusAreas.join(", ")}.`
+    : "";
+
   try {
-    // Fix: Using gemini-3-pro-preview for complex reasoning task (strategy development)
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `Gere 4 sugestões de ações de desenvolvimento para um executivo com scores DISC D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}.`,
-      config: {
-        systemInstruction: `Você é um Coach Executivo. Gere um JSON contendo uma lista de sugestões de ações práticas. Cada sugestão deve ter 'title', 'description' e 'category' (D, I, S ou C). Idioma: ${language}.`,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            suggestions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  category: { type: Type.STRING, enum: ["D", "I", "S", "C"] }
-                },
-                required: ["title", "description", "category"]
-              }
-            }
-          },
-          required: ["suggestions"]
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `Você é um Coach Executivo. Gere um JSON contendo uma lista de sugestões de ações práticas. 
+          O JSON deve ter a estrutura: { "suggestions": [{ "title": "...", "description": "...", "category": "D|I|S|C" }] }.
+          Idioma: ${language}. Responda APENAS com o JSON válido.${existingAreasText}`
+        },
+        {
+          role: "user",
+          content: `Gere 4 sugestões de ações de desenvolvimento para um executivo com scores DISC D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}.`
         }
-      }
+      ],
+      model: MODEL,
+      response_format: { type: "json_object" },
+      temperature: 0.7,
     });
 
-    // Access response.text property directly and parse JSON
-    return JSON.parse(response.text || "{}").suggestions || [];
+    const content = completion.choices[0]?.message?.content || "{}";
+    return JSON.parse(content).suggestions || [];
   } catch (error) {
-    console.error("Suggestions Error:", error);
-    return getMockSuggestions(scores, language);
+    console.error("Groq API Suggestions Error:", error);
+    return getMockSuggestions(scores, language, currentFocusAreas);
   }
 };
 
-function getMockSuggestions(scores: { D: number, I: number, S: number, C: number }, language: string) {
+function getMockSuggestions(scores: { D: number, I: number, S: number, C: number }, language: string, currentFocusAreas: string[] = []) {
   const suggestions = {
     pt: [
       { title: "Liderança Decisiva", description: "Pratique tomar decisões rápidas em situações de alta pressão", category: "D" as const },
@@ -145,7 +153,8 @@ function getMockSuggestions(scores: { D: number, I: number, S: number, C: number
     ]
   };
   
-  return suggestions[language as keyof typeof suggestions] || suggestions.en;
+  const allSuggestions = suggestions[language as keyof typeof suggestions] || suggestions.en;
+  return allSuggestions.filter(s => !currentFocusAreas.includes(s.title));
 }
 
 /**
@@ -156,49 +165,46 @@ export const generateFullDiscReport = async (
   userContext: string,
   language: 'en' | 'pt' | 'es' = 'pt'
 ) => {
-  const apiKey = import.meta.env.VITE_API_KEY || process.env.VITE_API_KEY;
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
   
   if (!apiKey) {
-    console.warn("Google AI API Key não configurada. Usando relatório mockado.");
+    console.warn("Groq API Key não configurada. Usando relatório mockado.");
     return getMockReport(scores, userContext, language);
   }
   
-  const ai = new GoogleGenAI({ apiKey });
+  const groq = getGroqClient(apiKey);
   
   const prompt = `Analise os seguintes scores DISC de um executivo C-Level: D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}. 
   Contexto adicional: ${userContext}.`;
 
   try {
-    // Fix: Using gemini-3-pro-preview for complex reasoning task (human capital consulting)
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        systemInstruction: `Você é um consultor de capital humano para CEOs. 
-        Gere um relatório estruturado em JSON com as chaves: 
-        'summary' (string em Markdown), 
-        'communication' (array de strings), 
-        'value' (array de strings), 
-        'blindspots' (array de strings).
-        Idioma: ${language === 'pt' ? 'Português do Brasil' : language}.`,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            summary: { type: Type.STRING, description: "Sumário executivo em Markdown" },
-            communication: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 itens sobre estilo de comunicação" },
-            value: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 itens sobre valor para organização" },
-            blindspots: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 pontos cegos ou riscos" },
-          },
-          required: ["summary", "communication", "value", "blindspots"]
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `Você é um consultor de capital humano para CEOs. 
+          Gere um relatório estruturado em JSON com as chaves: 
+          'summary' (string em Markdown), 
+          'communication' (array de strings), 
+          'value' (array de strings), 
+          'blindspots' (array de strings).
+          Idioma: ${language === 'pt' ? 'Português do Brasil' : language}.
+          Responda APENAS com o JSON válido.`
+        },
+        {
+          role: "user",
+          content: prompt
         }
-      }
+      ],
+      model: MODEL,
+      response_format: { type: "json_object" },
+      temperature: 0.7,
     });
 
-    // Access response.text property directly and parse JSON
-    return JSON.parse(response.text || "{}");
+    const content = completion.choices[0]?.message?.content || "{}";
+    return JSON.parse(content);
   } catch (error) {
-    console.error("Full Report Error:", error);
+    console.error("Groq API Report Error:", error);
     return getMockReport(scores, userContext, language);
   }
 };
@@ -206,60 +212,60 @@ export const generateFullDiscReport = async (
 function getMockReport(scores: { D: number, I: number, S: number, C: number }, userContext: string, language: string) {
   const reports = {
     pt: {
-      summary: `# Análise DISC Executiva\n\nSeu perfil demonstra uma combinação única de características que o tornam um líder eficaz. Com scores D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}, você possui uma abordagem equilibrada para liderança e tomada de decisão.`,
+      summary: "## Sumário Executivo\n\nEste executivo demonstra um forte equilíbrio entre resultados e processos.",
       communication: [
-        "Comunicação direta e objetiva, focada em resultados",
-        "Capacidade de adaptar a mensagem ao público-alvo",
-        "Estilo de comunicação que inspira confiança e credibilidade"
+        "Direto e objetivo",
+        "Baseado em dados",
+        "Formal em situações profissionais"
       ],
       value: [
-        "Liderança estratégica e visão de longo prazo",
-        "Capacidade de construir e manter relacionamentos profissionais",
-        "Excelência na execução de projetos complexos"
+        "Alta capacidade analítica",
+        "Foco em qualidade",
+        "Gestão de riscos"
       ],
       blindspots: [
-        "Tendência a ser perfeccionista em situações que requerem agilidade",
-        "Pode ser excessivamente cauteloso em decisões de risco calculado",
-        "Às vezes prioriza a harmonia sobre a confrontação necessária"
+        "Pode parecer distante",
+        "Excesso de análise",
+        "Resistência a mudanças rápidas sem dados"
       ]
     },
     en: {
-      summary: `# Executive DISC Analysis\n\nYour profile demonstrates a unique combination of characteristics that make you an effective leader. With scores D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}, you have a balanced approach to leadership and decision-making.`,
+      summary: "## Executive Summary\n\nThis executive demonstrates a strong balance between results and processes.",
       communication: [
-        "Direct and objective communication, focused on results",
-        "Ability to adapt the message to the target audience",
-        "Communication style that inspires confidence and credibility"
+        "Direct and objective",
+        "Data-driven",
+        "Formal in professional situations"
       ],
       value: [
-        "Strategic leadership and long-term vision",
-        "Ability to build and maintain professional relationships",
-        "Excellence in executing complex projects"
+        "High analytical capacity",
+        "Focus on quality",
+        "Risk management"
       ],
       blindspots: [
-        "Tendency to be perfectionistic in situations requiring agility",
-        "Can be overly cautious in calculated risk decisions",
-        "Sometimes prioritizes harmony over necessary confrontation"
+        "May appear distant",
+        "Analysis paralysis",
+        "Resistance to rapid changes without data"
       ]
     },
     es: {
-      summary: `# Análisis DISC Ejecutivo\n\nSu perfil demuestra una combinación única de características que lo hacen un líder eficaz. Con puntajes D:${scores.D}, I:${scores.I}, S:${scores.S}, C:${scores.C}, tiene un enfoque equilibrado para el liderazgo y la toma de decisiones.`,
+      summary: "## Resumen Ejecutivo\n\nEste ejecutivo demuestra un fuerte equilibrio entre resultados y procesos.",
       communication: [
-        "Comunicación directa y objetiva, enfocada en resultados",
-        "Capacidad de adaptar el mensaje al público objetivo",
-        "Estilo de comunicación que inspira confianza y credibilidad"
+        "Directo y objetivo",
+        "Basado en datos",
+        "Formal en situaciones profesionales"
       ],
       value: [
-        "Liderazgo estratégico y visión a largo plazo",
-        "Capacidad para construir y mantener relaciones profesionales",
-        "Excelencia en la ejecución de proyectos complejos"
+        "Alta capacidad analítica",
+        "Enfoque en calidad",
+        "Gestión de riesgos"
       ],
       blindspots: [
-        "Tendencia a ser perfeccionista en situaciones que requieren agilidad",
-        "Puede ser excesivamente cauteloso en decisiones de riesgo calculado",
-        "A veces prioriza la armonía sobre la confrontación necesaria"
+        "Puede parecer distante",
+        "Parálisis por análisis",
+        "Resistencia a cambios rápidos sin datos"
       ]
     }
   };
-  
+
   return reports[language as keyof typeof reports] || reports.en;
 }

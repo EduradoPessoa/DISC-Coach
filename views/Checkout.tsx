@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { useUser } from '../context/UserContext';
+import { useUser } from '../context/UserContextSupabase';
 import { useNotification } from '../context/NotificationContext';
-import { validatePromoCode, createStripeCheckoutSession } from '../services/stripeService';
+import { validatePromoCode, createStripeCheckoutSession, STRIPE_CONFIG } from '../services/stripeService';
 import { ShieldCheck, CreditCard, Tag, Lock, AlertCircle } from 'lucide-react';
 
 const Checkout = () => {
@@ -22,8 +22,8 @@ const Checkout = () => {
   const finalPrice = basePrice * ((100 - discount) / 100);
 
   useEffect(() => {
-    // Verifica se o Stripe foi carregado corretamente no window
-    if (!(window as any).Stripe) {
+    // Verifica se o Stripe foi carregado corretamente no window (apenas se não for Mock)
+    if (!STRIPE_CONFIG.isMock && !(window as any).Stripe) {
         setSdkError("O módulo de pagamento Stripe não pôde ser carregado. Por favor, desative bloqueadores de anúncios e recarregue a página.");
     }
   }, []);

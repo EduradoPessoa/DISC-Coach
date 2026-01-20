@@ -7,6 +7,14 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_73
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Tipos do Supabase
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export interface Database {
   public: {
     Tables: {
@@ -23,16 +31,15 @@ export interface Database {
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Insert: Omit<Database['public']['Tables']['users']['Row'], 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['users']['Row']>
       }
       assessments: {
         Row: {
           id: string
           user_id: string
-          answers: number[]
           scores: { D: number; I: number; S: number; C: number }
-          analysis?: string
+          analysis?: Json
           created_at: string
         }
         Insert: Omit<Database['public']['Tables']['assessments']['Row'], 'id' | 'created_at'>
@@ -45,11 +52,10 @@ export interface Database {
           title: string
           description: string
           category: 'D' | 'I' | 'S' | 'C'
-          status: 'pending' | 'in_progress' | 'completed'
+          status: 'planned' | 'in_progress' | 'completed'
           created_at: string
-          updated_at: string
         }
-        Insert: Omit<Database['public']['Tables']['focus_areas']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Insert: Omit<Database['public']['Tables']['focus_areas']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['focus_areas']['Row']>
       }
       invitations: {
